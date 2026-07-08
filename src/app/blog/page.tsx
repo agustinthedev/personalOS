@@ -5,24 +5,24 @@ export default async function BlogPage() {
   const articles = await getPublishedArticles();
 
   return (
-    <main className="app-shell min-h-screen text-white">
+    <main className="app-shell min-h-screen text-slate-900">
       <section className="soft-grid px-4 py-5 md:px-8">
         <div className="mx-auto max-w-7xl">
           <header className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <Link href="/" className="text-sm font-medium text-white">
+              <Link href="/" className="text-sm font-medium text-slate-900">
                 Personal OS
               </Link>
-              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-white">
+              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-slate-900">
                 Daily Blog
               </p>
               <h1 className="liquid-text mt-3 text-5xl font-semibold md:text-7xl">
                 Morning readings
               </h1>
             </div>
-            <div className="panel-muted rounded-[28px] p-4 text-sm text-white/72">
-              <p className="font-mono text-white/58">report.blog.status</p>
-              <p className="mt-2 text-2xl font-semibold text-white">
+            <div className="panel-muted rounded-[28px] p-4 text-sm text-slate-700">
+              <p className="font-mono text-slate-600">report.blog.status</p>
+              <p className="mt-2 text-2xl font-semibold text-slate-900">
                 {articles.length} published
               </p>
             </div>
@@ -39,18 +39,18 @@ export default async function BlogPage() {
                   <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_260px]">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-[28px] border border-cyan-100/20 bg-cyan-100/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-white">
+                        <span className="rounded-[28px] border border-cyan-100/20 bg-cyan-100/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-900">
                           Published
                         </span>
-                        <span className="font-mono text-xs text-white/58">
+                        <span className="font-mono text-xs text-slate-600">
                           {formatPublishedDate(article.publishedAt)} - {article.topic} -{" "}
                           {article.readingMinutes} min
                         </span>
                       </div>
-                      <h2 className="mt-5 max-w-4xl text-3xl font-semibold leading-tight text-white">
+                      <h2 className="mt-5 max-w-4xl text-3xl font-semibold leading-tight text-slate-900">
                         {article.title}
                       </h2>
-                      <p className="mt-4 max-w-3xl leading-7 text-white/72">
+                      <p className="mt-4 max-w-3xl leading-7 text-slate-700">
                         {article.summary}
                       </p>
                     </div>
@@ -60,7 +60,7 @@ export default async function BlogPage() {
                         {parseTags(article.tags).map((tag) => (
                           <span
                             key={tag}
-                            className="rounded border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/82"
+                            className="rounded border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-700"
                           >
                             {tag}
                           </span>
@@ -75,8 +75,8 @@ export default async function BlogPage() {
             </div>
           ) : (
             <div className="panel rounded-[28px] p-6">
-              <h2 className="text-2xl font-semibold text-white">No articles yet.</h2>
-              <p className="mt-3 leading-7 text-white/72">
+              <h2 className="text-2xl font-semibold text-slate-900">No articles yet.</h2>
+              <p className="mt-3 leading-7 text-slate-700">
                 The initial flow is ready. Run the migration and generate the first
                 article to populate this view.
               </p>

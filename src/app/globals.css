@@ -2,7 +2,7 @@
 
 :root {
   --background: #c7d0df;
-  --foreground: #ffffff;
+  --foreground: #273244;
 }
 
 @theme inline {
@@ -25,60 +25,64 @@ body {
 
 .app-shell {
   background:
-    linear-gradient(126deg, rgba(255, 255, 255, 0.58) 0%, rgba(255, 255, 255, 0) 26%),
-    linear-gradient(154deg, rgba(125, 173, 214, 0.65) 0%, rgba(125, 173, 214, 0) 34%),
-    linear-gradient(238deg, rgba(255, 149, 83, 0.56) 0%, rgba(255, 149, 83, 0) 36%),
-    linear-gradient(318deg, rgba(178, 164, 224, 0.72) 0%, rgba(178, 164, 224, 0) 42%),
-    linear-gradient(180deg, #bfc8dc 0%, #9facbf 48%, #6d7686 100%);
+    linear-gradient(126deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 26%),
+    linear-gradient(154deg, rgba(118, 171, 211, 0.7) 0%, rgba(118, 171, 211, 0) 34%),
+    linear-gradient(238deg, rgba(255, 143, 74, 0.62) 0%, rgba(255, 143, 74, 0) 36%),
+    linear-gradient(318deg, rgba(165, 151, 215, 0.68) 0%, rgba(165, 151, 215, 0) 42%),
+    linear-gradient(180deg, #d7deeb 0%, #b9c5d7 48%, #8f9bad 100%);
+  isolation: isolate;
   overflow: hidden;
   position: relative;
 }
 
 .app-shell::before {
   background:
-    linear-gradient(112deg, transparent 0%, rgba(255, 255, 255, 0.28) 16%, transparent 31%),
-    linear-gradient(292deg, transparent 0%, rgba(255, 239, 211, 0.26) 19%, transparent 44%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent 48%);
+    linear-gradient(112deg, transparent 0%, rgba(255, 255, 255, 0.16) 16%, transparent 31%),
+    linear-gradient(292deg, transparent 0%, rgba(255, 222, 185, 0.18) 19%, transparent 44%);
   content: "";
   inset: 0;
   pointer-events: none;
   position: fixed;
+  z-index: 0;
 }
 
 .app-shell::after {
   background:
-    conic-gradient(from 140deg at 22% 18%, rgba(255, 255, 255, 0.52), rgba(115, 171, 205, 0.28), rgba(244, 166, 116, 0.34), rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.52)),
-    linear-gradient(120deg, rgba(38, 45, 59, 0.18), rgba(255, 255, 255, 0.08));
+    conic-gradient(from 140deg at 22% 18%, rgba(255, 255, 255, 0.34), rgba(86, 148, 194, 0.34), rgba(244, 144, 80, 0.38), rgba(178, 164, 224, 0.3), rgba(255, 255, 255, 0.34)),
+    linear-gradient(120deg, rgba(39, 50, 68, 0.12), rgba(255, 255, 255, 0.05));
   content: "";
   filter: blur(38px);
   inset: -18%;
-  opacity: 0.78;
+  opacity: 0.64;
   pointer-events: none;
   position: fixed;
   transform: rotate(-8deg) scale(1.08);
+  z-index: 0;
 }
 
 .panel {
+  -webkit-backdrop-filter: blur(34px) saturate(165%);
   backdrop-filter: blur(34px) saturate(165%);
   background:
-    linear-gradient(142deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.18) 36%, rgba(255, 255, 255, 0.08)),
-    rgba(64, 70, 82, 0.34);
-  border: 1px solid rgba(255, 255, 255, 0.48);
+    linear-gradient(142deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.24) 38%, rgba(255, 255, 255, 0.12)),
+    rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.64);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.2),
-    0 24px 70px rgba(43, 52, 71, 0.28);
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    inset 0 -1px 0 rgba(39, 50, 68, 0.08),
+    0 24px 70px rgba(43, 52, 71, 0.18);
 }
 
 .panel-muted {
+  -webkit-backdrop-filter: blur(30px) saturate(165%);
   backdrop-filter: blur(30px) saturate(165%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.14)),
-    rgba(71, 78, 92, 0.26);
-  border: 1px solid rgba(255, 255, 255, 0.44);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.18)),
+    rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.58);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.68),
-    0 18px 44px rgba(43, 52, 71, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 18px 44px rgba(43, 52, 71, 0.14);
 }
 
 .soft-grid {
@@ -105,17 +109,18 @@ body {
 }
 
 .glass-button {
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
   backdrop-filter: blur(24px) saturate(170%);
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.44);
+  background: rgba(255, 255, 255, 0.26);
+  border: 1px solid rgba(255, 255, 255, 0.58);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.64),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78),
     0 10px 28px rgba(42, 52, 70, 0.14);
 }
 
 .liquid-text {
-  background: linear-gradient(92deg, #ffffff 0%, #f6fbff 34%, #d8eeff 62%, #fff2e5 100%);
+  background: linear-gradient(92deg, #273244 0%, #34445c 38%, #3b7ea2 66%, #8a613f 100%);
   background-clip: text;
-  filter: drop-shadow(0 16px 28px rgba(42, 52, 70, 0.24));
+  filter: drop-shadow(0 16px 28px rgba(42, 52, 70, 0.16));
   color: transparent;
 }

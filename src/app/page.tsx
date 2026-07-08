@@ -41,7 +41,7 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="app-shell min-h-screen text-white">
+    <main className="app-shell min-h-screen text-slate-900">
       <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-[96px_1fr]">
         <SideNav />
 
@@ -61,7 +61,7 @@ export default async function Home() {
                   <h1 className="liquid-text mt-8 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-normal md:text-7xl">
                     Personal systems, rendered as a command dashboard.
                   </h1>
-                  <p className="mt-5 max-w-2xl text-lg leading-8 text-white/76">
+                  <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-700">
                     A liquid glass operating surface for daily reading, personal
                     signals, automations, and the mini apps that will power your day.
                   </p>
@@ -82,14 +82,14 @@ export default async function Home() {
               <div className="panel rounded-[28px] p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/58">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
                       System Activity
                     </p>
-                    <h2 className="mt-2 text-xl font-semibold text-white">
+                    <h2 className="mt-2 text-xl font-semibold text-slate-900">
                       Content and app signals
                     </h2>
                   </div>
-                  <span className="rounded-[28px] border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-xs font-medium text-white">
+                  <span className="rounded-[28px] border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-xs font-medium text-slate-900">
                     Healthy
                   </span>
                 </div>
@@ -119,16 +119,16 @@ export default async function Home() {
                     className="panel group rounded-[28px] p-5 transition hover:-translate-y-0.5 hover:border-cyan-100/35"
                   >
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/58">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
                         {app.status}
                       </p>
                       <span className={`h-2 w-10 rounded-full bg-gradient-to-r ${app.accent}`} />
                     </div>
                     <div className="mt-5 flex items-end justify-between gap-4">
-                      <h2 className="text-2xl font-semibold text-white">{app.name}</h2>
-                      <p className="font-mono text-sm text-white/72">{app.metric}</p>
+                      <h2 className="text-2xl font-semibold text-slate-900">{app.name}</h2>
+                      <p className="font-mono text-sm text-slate-700">{app.metric}</p>
                     </div>
-                    <p className="mt-4 leading-7 text-white/72">{app.description}</p>
+                    <p className="mt-4 leading-7 text-slate-700">{app.description}</p>
                   </Link>
                 ))}
               </div>
@@ -143,18 +143,18 @@ export default async function Home() {
 function TopBar() {
   return (
     <div className="mx-auto mb-5 flex max-w-7xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div className="flex items-center gap-2 text-sm text-white/72">
-        <span className="text-white/45">Dashboard</span>
+      <div className="flex items-center gap-2 text-sm text-slate-700">
+        <span className="text-slate-500">Dashboard</span>
         <span>/</span>
-        <span className="glass-button rounded-[28px] px-3 py-1 text-white">
+        <span className="glass-button rounded-[28px] px-3 py-1 text-slate-900">
           Personal OS
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-white/90">
+        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-slate-700">
           Last 24 hours
         </button>
-        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-white/90">
+        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-slate-700">
           UTC -03
         </button>
         <Link
@@ -178,7 +178,7 @@ function SideNav() {
       {["D", "B", "A", "S"].map((item) => (
         <div
           key={item}
-          className="glass-button flex h-10 w-10 items-center justify-center rounded-[28px] text-xs font-semibold text-white/82"
+          className="glass-button flex h-10 w-10 items-center justify-center rounded-[28px] text-xs font-semibold text-slate-700"
         >
           {item}
         </div>
@@ -197,13 +197,13 @@ function TodayPanel({
   if (!latestArticle) {
     return (
       <aside className="panel-muted rounded-[28px] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-900">
           Today&apos;s reading
         </p>
-        <h2 className="mt-5 text-3xl font-semibold text-white">
+        <h2 className="mt-5 text-3xl font-semibold text-slate-900">
           No published articles yet.
         </h2>
-        <p className="mt-4 leading-7 text-white/72">
+        <p className="mt-4 leading-7 text-slate-700">
           Run `npm run db:migrate` and then `npm run article:generate` to create
           the first reading.
         </p>
@@ -213,18 +213,18 @@ function TodayPanel({
 
   return (
     <aside className="panel-muted rounded-[28px] p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-900">
         Today&apos;s reading
       </p>
-      <h2 className="mt-5 text-3xl font-semibold leading-tight text-white">
+      <h2 className="mt-5 text-3xl font-semibold leading-tight text-slate-900">
         {latestArticle.title}
       </h2>
-      <p className="mt-4 leading-7 text-white/72">{latestArticle.summary}</p>
+      <p className="mt-4 leading-7 text-slate-700">{latestArticle.summary}</p>
       <div className="mt-5 flex flex-wrap gap-2">
         {parseTags(latestArticle.tags).map((tag) => (
           <span
             key={tag}
-            className="rounded border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/82"
+            className="rounded border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-700"
           >
             {tag}
           </span>
@@ -252,17 +252,17 @@ function MetricCard({
   tone: "cyan" | "orange" | "violet";
 }) {
   const tones = {
-    cyan: "from-cyan-200/70 to-cyan-200/5 text-white",
-    orange: "from-fuchsia-200/70 to-fuchsia-200/5 text-white",
-    violet: "from-violet-200/70 to-violet-200/5 text-white",
+    cyan: "from-cyan-200/70 to-cyan-200/5 text-slate-900",
+    orange: "from-fuchsia-200/70 to-fuchsia-200/5 text-slate-900",
+    violet: "from-violet-200/70 to-violet-200/5 text-slate-900",
   };
 
   return (
     <div className="panel rounded-[28px] p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/58">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
         {label}
       </p>
-      <p className="mt-5 text-4xl font-semibold text-white">{value}</p>
+      <p className="mt-5 text-4xl font-semibold text-slate-900">{value}</p>
       <p className={`mt-3 text-sm font-medium ${tones[tone].split(" ").at(-1)}`}>
         {delta}
       </p>
@@ -273,9 +273,9 @@ function MetricCard({
 
 function Chip({ label, tone }: { label: string; tone: "cyan" | "orange" | "violet" }) {
   const tones = {
-    cyan: "border-cyan-100/20 bg-cyan-100/10 text-white",
-    orange: "border-fuchsia-100/20 bg-fuchsia-100/10 text-white",
-    violet: "border-violet-100/20 bg-violet-100/10 text-white",
+    cyan: "border-cyan-100/20 bg-cyan-100/10 text-slate-900",
+    orange: "border-fuchsia-100/20 bg-fuchsia-100/10 text-slate-900",
+    violet: "border-violet-100/20 bg-violet-100/10 text-slate-900",
   };
 
   return (
