@@ -55,7 +55,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </div>
           </div>
 
-          <aside className="space-y-5">
+          <aside>
             <div className="panel rounded-[8px] p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500">
                 Reading Metrics
@@ -65,22 +65,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 <Stat label="Topic" value={article.topic} />
                 <Stat label="Generator" value={article.generatedBy} />
               </div>
-            </div>
-
-            <div className="panel rounded-[8px] p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">
-                Blog Commands
-              </p>
-              {["/blog write", "/blog rewrite", "/blog analyze", "/blog brief"].map(
-                (command) => (
-                  <div
-                    key={command}
-                    className="mt-3 rounded border border-white/8 bg-white/[0.03] px-4 py-3 font-mono text-sm text-zinc-300"
-                  >
-                    {command}
-                  </div>
-                ),
-              )}
             </div>
           </aside>
         </article>
