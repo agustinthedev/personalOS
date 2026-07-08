@@ -232,8 +232,11 @@ async function notifyTelegram({
       text: [
         "📰 <b>New blog article available</b>",
         "",
-        escapeHtml(title),
-        url,
+        `<b>${escapeHtml(title)}</b>`,
+        "",
+        `<a href="${escapeHtmlAttribute(url)}">Open article</a>`,
+        "",
+        escapeHtml(url),
       ].join("\n"),
     }),
   });
@@ -252,6 +255,10 @@ function escapeHtml(value: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
+}
+
+function escapeHtmlAttribute(value: string) {
+  return escapeHtml(value).replace(/"/g, "&quot;");
 }
 
 main()
