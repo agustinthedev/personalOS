@@ -62,19 +62,18 @@ body {
 }
 
 .panel {
-  -webkit-backdrop-filter: blur(48px) saturate(210%) contrast(110%);
-  backdrop-filter: blur(48px) saturate(210%) contrast(110%);
+  -webkit-backdrop-filter: blur(50px) saturate(118%) contrast(104%);
+  backdrop-filter: blur(50px) saturate(118%) contrast(104%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.018) 42%, rgba(255, 255, 255, 0.004)),
-    linear-gradient(315deg, rgba(255, 255, 255, 0.012), rgba(82, 143, 192, 0.055) 48%, rgba(255, 143, 74, 0.052)),
-    rgba(255, 255, 255, 0.012);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012) 42%, rgba(255, 255, 255, 0.002)),
+    rgba(255, 255, 255, 0.006);
   background-clip: padding-box;
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.86),
     inset -1px -1px 0 rgba(39, 50, 68, 0.12),
-    inset 20px 24px 54px rgba(255, 255, 255, 0.055),
-    inset -28px -34px 60px rgba(42, 64, 90, 0.18),
+    inset 20px 24px 54px rgba(255, 255, 255, 0.038),
+    inset -28px -34px 60px rgba(42, 64, 90, 0.16),
     0 26px 80px rgba(43, 52, 71, 0.18),
     0 1px 0 rgba(255, 255, 255, 0.54);
   isolation: isolate;
@@ -84,13 +83,12 @@ body {
 
 .panel::before {
   background:
-    linear-gradient(118deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.035) 14%, transparent 32%),
-    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.22), transparent 54%),
-    radial-gradient(64% 48% at 95% 92%, rgba(80, 171, 215, 0.12), transparent 60%);
+    linear-gradient(118deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.025) 14%, transparent 32%),
+    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.14), transparent 56%);
   border-radius: inherit;
   content: "";
   inset: 0;
-  opacity: 0.44;
+  opacity: 0.38;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -127,18 +125,18 @@ body {
 }
 
 .panel-muted {
-  -webkit-backdrop-filter: blur(46px) saturate(210%) contrast(110%);
-  backdrop-filter: blur(46px) saturate(210%) contrast(110%);
+  -webkit-backdrop-filter: blur(48px) saturate(118%) contrast(104%);
+  backdrop-filter: blur(48px) saturate(118%) contrast(104%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.078), rgba(255, 255, 255, 0.016) 50%, rgba(255, 255, 255, 0.004)),
-    rgba(255, 255, 255, 0.01);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 50%, rgba(255, 255, 255, 0.002)),
+    rgba(255, 255, 255, 0.004);
   background-clip: padding-box;
   border: 1px solid rgba(255, 255, 255, 0.68);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.82),
     inset -1px -1px 0 rgba(39, 50, 68, 0.1),
-    inset 18px 20px 46px rgba(255, 255, 255, 0.045),
-    inset -22px -26px 50px rgba(42, 64, 90, 0.16),
+    inset 18px 20px 46px rgba(255, 255, 255, 0.032),
+    inset -22px -26px 50px rgba(42, 64, 90, 0.14),
     0 18px 54px rgba(43, 52, 71, 0.13);
   isolation: isolate;
   overflow: hidden;
@@ -147,13 +145,12 @@ body {
 
 .panel-muted::before {
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.025) 18%, transparent 38%),
-    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.16), transparent 58%),
-    radial-gradient(60% 50% at 100% 100%, rgba(255, 143, 74, 0.09), transparent 60%);
+    linear-gradient(120deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.018) 18%, transparent 38%),
+    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.1), transparent 58%);
   border-radius: inherit;
   content: "";
   inset: 0;
-  opacity: 0.4;
+  opacity: 0.34;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -203,11 +200,11 @@ body {
 }
 
 .glass-button {
-  -webkit-backdrop-filter: blur(40px) saturate(210%) contrast(110%);
-  backdrop-filter: blur(40px) saturate(210%) contrast(110%);
+  -webkit-backdrop-filter: blur(42px) saturate(118%) contrast(104%);
+  backdrop-filter: blur(42px) saturate(118%) contrast(104%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.018)),
-    rgba(255, 255, 255, 0.012);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01)),
+    rgba(255, 255, 255, 0.006);
   border: 1px solid rgba(255, 255, 255, 0.68);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.82),
