@@ -12,36 +12,36 @@ export function ArticleBody({ body, title }: ArticleBodyProps) {
       <ReactMarkdown
         components={{
           h2: ({ children }) => (
-            <h2 className="mb-5 mt-12 text-2xl font-semibold leading-tight text-zinc-50 first:mt-0">
+            <h2 className="mb-5 mt-12 text-2xl font-semibold leading-tight text-white first:mt-0">
               {children}
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="mb-4 mt-9 text-xl font-semibold leading-tight text-cyan-50">
+            <h3 className="mb-4 mt-9 text-xl font-semibold leading-tight text-white">
               {children}
             </h3>
           ),
           p: ({ children }) => (
-            <p className="mb-5 text-[17px] leading-8 text-zinc-300 last:mb-0">
+            <p className="mb-5 text-[17px] leading-8 text-white/82 last:mb-0">
               {children}
             </p>
           ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-zinc-50">{children}</strong>
+            <strong className="font-semibold text-white">{children}</strong>
           ),
           ul: ({ children }) => (
-            <ul className="mb-6 mt-3 list-disc space-y-3 pl-6 text-[17px] leading-8 text-zinc-300">
+            <ul className="mb-6 mt-3 list-disc space-y-3 pl-6 text-[17px] leading-8 text-white/82">
               {children}
             </ul>
           ),
           ol: ({ children }) => (
-            <ol className="mb-6 mt-3 list-decimal space-y-3 pl-6 text-[17px] leading-8 text-zinc-300">
+            <ol className="mb-6 mt-3 list-decimal space-y-3 pl-6 text-[17px] leading-8 text-white/82">
               {children}
             </ol>
           ),
           li: ({ children }) => <li className="pl-1">{children}</li>,
           blockquote: ({ children }) => (
-            <blockquote className="my-6 rounded-[8px] border border-white/10 bg-white/[0.045] p-5 text-zinc-300">
+            <blockquote className="my-6 rounded-[28px] border border-white/10 bg-white/[0.045] p-5 text-white/82">
               {children}
             </blockquote>
           ),
