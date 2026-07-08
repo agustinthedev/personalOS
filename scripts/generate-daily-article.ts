@@ -1,20 +1,12 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import OpenAI from "openai";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { z } from "zod";
 
 const prisma = new PrismaClient();
-
-const topics = [
-  "Personal productivity systems",
-  "Strategic thinking",
-  "Accelerated learning",
-  "AI applied to daily work",
-  "Practical philosophy",
-  "Decision-making",
-  "Creativity and writing",
-  "Mental health for deep work",
-];
+const DEFAULT_MODEL = "gpt-5.4-mini";
 
 const articleSchema = z.object({
   title: z.string().min(8),
@@ -28,10 +20,10 @@ const articleSchema = z.object({
 type GeneratedArticle = z.infer<typeof articleSchema>;
 
 async function main() {
-  const topic = pickTopic();
+  const context = await getGenerationContext();
   const article = process.env.OPENAI_API_KEY
-    ? await generateWithOpenAI(topic)
-    : generateFallbackArticle(topic);
+    ? await generateWithOpenAI(context)
+    : generateFallbackArticle(context.forcedTopic || "personal systems");
 
   const readingMinutes = estimateReadingMinutes(article.body);
   const slug = await uniqueSlug(slugify(article.title));
@@ -47,7 +39,9 @@ async function main() {
       tags: article.tags.join(", "),
       readingMinutes,
       status: "PUBLISHED",
-      generatedBy: process.env.OPENAI_API_KEY ? "openai" : "local-fallback",
+      generatedBy: process.env.OPENAI_API_KEY
+        ? process.env.OPENAI_MODEL || DEFAULT_MODEL
+        : "local-fallback",
       publishedAt: new Date(),
     },
   });
@@ -56,30 +50,35 @@ async function main() {
   console.log(`Local URL: http://localhost:3000/blog/${created.slug}`);
 }
 
-function pickTopic() {
-  const dayIndex = Math.floor(Date.now() / 86_400_000);
-  return topics[dayIndex % topics.length];
-}
-
-async function generateWithOpenAI(topic: string): Promise<GeneratedArticle> {
+async function generateWithOpenAI(
+  context: GenerationContext,
+): Promise<GeneratedArticle> {
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const editorialPrompt = await renderPrompt(context);
 
   const response = await client.responses.create({
-    model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+    model: process.env.OPENAI_MODEL ?? DEFAULT_MODEL,
     input: [
       {
         role: "system",
         content:
-          "You are the editor of a personal learning blog. Write in clear, practical English with a calm and thoughtful tone.",
+          "You are the editor-in-chief and main writer of Pills of Understanding.",
       },
       {
         role: "user",
         content: [
-          "Generate an article for a 10 to 15 minute morning reading.",
-          `Tema: ${topic}.`,
-          "It should include actionable ideas, concrete examples, and a Markdown structure with ## sections.",
-          "Avoid filler, empty motivational language, and shallow lists.",
-          "Return valid JSON with: title, subtitle, summary, body, topic, tags.",
+          editorialPrompt,
+          "",
+          "For database storage, return valid JSON only with this shape:",
+          "{",
+          '  "title": "Article title without Markdown #",',
+          '  "subtitle": "One concise subtitle",',
+          '  "summary": "Two or three sentence editorial summary",',
+          '  "body": "Markdown article body excluding the H1 title and reading time line",',
+          '  "topic": "Specific concrete topic",',
+          '  "tags": ["tag-one", "tag-two", "tag-three"]',
+          "}",
+          "The body must still include clear Markdown subheadings and must end with ## The Mental Model of the Day.",
         ].join("\n"),
       },
     ],
@@ -92,6 +91,55 @@ async function generateWithOpenAI(topic: string): Promise<GeneratedArticle> {
 
   const raw = response.output_text;
   return articleSchema.parse(JSON.parse(raw));
+}
+
+type GenerationContext = {
+  currentDate: string;
+  recentArticles: string;
+  avoidTopics: string;
+  forcedTopic: string;
+  sourceMaterial: string;
+};
+
+async function getGenerationContext(): Promise<GenerationContext> {
+  const recent = await prisma.article.findMany({
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
+    take: 20,
+    select: {
+      title: true,
+      topic: true,
+      tags: true,
+      publishedAt: true,
+    },
+  });
+
+  const lastTwoTopics = recent.slice(0, 2).map((article) => article.topic);
+
+  return {
+    currentDate: new Date().toISOString().slice(0, 10),
+    recentArticles:
+      recent
+        .map((article, index) => {
+          const date = article.publishedAt?.toISOString().slice(0, 10) ?? "draft";
+          return `${index + 1}. ${article.title} (${article.topic}, ${date})`;
+        })
+        .join("\n") || "No recent articles yet.",
+    avoidTopics: lastTwoTopics.length > 0 ? lastTwoTopics.join(", ") : "None.",
+    forcedTopic: process.env.FORCED_TOPIC?.trim() ?? "",
+    sourceMaterial: process.env.SOURCE_MATERIAL?.trim() ?? "",
+  };
+}
+
+async function renderPrompt(context: GenerationContext) {
+  const promptPath = path.join(process.cwd(), "prompts", "daily-article.md");
+  const template = await readFile(promptPath, "utf8");
+
+  return template
+    .replaceAll("{{current_date}}", context.currentDate)
+    .replaceAll("{{recent_articles}}", context.recentArticles)
+    .replaceAll("{{avoid_topics}}", context.avoidTopics)
+    .replaceAll("{{forced_topic}}", context.forcedTopic)
+    .replaceAll("{{source_material}}", context.sourceMaterial);
 }
 
 function generateFallbackArticle(topic: string): GeneratedArticle {
