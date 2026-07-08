@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@view-transition {
+  navigation: auto;
+}
+
 :root {
   --background: #030509;
   --foreground: #eef2f7;
@@ -21,6 +25,49 @@ body {
 ::selection {
   background: #eef2f7;
   color: #121418;
+}
+
+::view-transition-old(root) {
+  animation: page-fade-out 420ms cubic-bezier(0.32, 0, 0.67, 0) both;
+}
+
+::view-transition-new(root) {
+  animation: page-fade-in 560ms 70ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes page-fade-out {
+  from {
+    filter: blur(0) brightness(1);
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  to {
+    filter: blur(18px) brightness(0.7);
+    opacity: 0;
+    transform: scale(0.985);
+  }
+}
+
+@keyframes page-fade-in {
+  from {
+    filter: blur(18px) brightness(0.75);
+    opacity: 0;
+    transform: scale(1.015);
+  }
+
+  to {
+    filter: blur(0) brightness(1);
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 1ms;
+  }
 }
 
 .app-shell {

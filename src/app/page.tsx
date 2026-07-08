@@ -157,12 +157,14 @@ function TopBar() {
         <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-zinc-300">
           UTC -03
         </button>
-        <Link
+        {/* Cross-document view transitions need a real document navigation. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a
           href="/blog"
           className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-[0_0_28px_rgba(255,255,255,0.16)] transition hover:bg-zinc-100"
         >
           Open Blog
-        </Link>
+        </a>
       </div>
     </div>
   );
