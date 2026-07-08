@@ -25,10 +25,11 @@ body {
 
 .app-shell {
   background:
-    linear-gradient(126deg, rgba(255, 255, 255, 0.42) 0%, rgba(255, 255, 255, 0) 26%),
-    linear-gradient(154deg, rgba(118, 171, 211, 0.7) 0%, rgba(118, 171, 211, 0) 34%),
-    linear-gradient(238deg, rgba(255, 143, 74, 0.62) 0%, rgba(255, 143, 74, 0) 36%),
-    linear-gradient(318deg, rgba(165, 151, 215, 0.68) 0%, rgba(165, 151, 215, 0) 42%),
+    linear-gradient(126deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 24%),
+    linear-gradient(154deg, rgba(72, 160, 219, 0.72) 0%, rgba(72, 160, 219, 0) 35%),
+    linear-gradient(238deg, rgba(255, 125, 66, 0.68) 0%, rgba(255, 125, 66, 0) 38%),
+    linear-gradient(318deg, rgba(140, 126, 221, 0.66) 0%, rgba(140, 126, 221, 0) 44%),
+    linear-gradient(72deg, rgba(65, 184, 199, 0.24) 0%, rgba(65, 184, 199, 0) 32%),
     linear-gradient(180deg, #d7deeb 0%, #b9c5d7 48%, #8f9bad 100%);
   isolation: isolate;
   overflow: hidden;
@@ -48,7 +49,7 @@ body {
 
 .app-shell::after {
   background:
-    conic-gradient(from 140deg at 22% 18%, rgba(255, 255, 255, 0.34), rgba(86, 148, 194, 0.34), rgba(244, 144, 80, 0.38), rgba(178, 164, 224, 0.3), rgba(255, 255, 255, 0.34)),
+    conic-gradient(from 140deg at 22% 18%, rgba(255, 255, 255, 0.22), rgba(31, 144, 205, 0.36), rgba(244, 118, 62, 0.44), rgba(145, 128, 224, 0.34), rgba(255, 255, 255, 0.22)),
     linear-gradient(120deg, rgba(39, 50, 68, 0.12), rgba(255, 255, 255, 0.05));
   content: "";
   filter: blur(38px);
@@ -64,25 +65,112 @@ body {
   -webkit-backdrop-filter: blur(34px) saturate(165%);
   backdrop-filter: blur(34px) saturate(165%);
   background:
-    linear-gradient(142deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.24) 38%, rgba(255, 255, 255, 0.12)),
-    rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.64);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.08) 42%, rgba(255, 255, 255, 0.03)),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.04), rgba(82, 143, 192, 0.08) 48%, rgba(255, 143, 74, 0.08)),
+    rgba(255, 255, 255, 0.08);
+  background-clip: padding-box;
+  border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.86),
-    inset 0 -1px 0 rgba(39, 50, 68, 0.08),
-    0 24px 70px rgba(43, 52, 71, 0.18);
+    inset 1px 1px 0 rgba(255, 255, 255, 0.86),
+    inset -1px -1px 0 rgba(39, 50, 68, 0.1),
+    inset 18px 22px 48px rgba(255, 255, 255, 0.18),
+    inset -22px -28px 52px rgba(42, 64, 90, 0.12),
+    0 26px 80px rgba(43, 52, 71, 0.18),
+    0 1px 0 rgba(255, 255, 255, 0.54);
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+.panel::before {
+  background:
+    linear-gradient(118deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.12) 18%, transparent 36%),
+    radial-gradient(80% 56% at 12% 8%, rgba(255, 255, 255, 0.6), transparent 52%),
+    radial-gradient(64% 48% at 95% 92%, rgba(80, 171, 215, 0.18), transparent 58%);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  opacity: 0.66;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.panel::after {
+  background:
+    linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.42) 50%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.52), transparent 34%, rgba(255, 255, 255, 0.24));
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
+    inset 0 0 24px rgba(255, 255, 255, 0.2);
+  content: "";
+  filter: blur(0.2px);
+  inset: 1px;
+  mask-image: linear-gradient(145deg, black 0%, transparent 52%, black 100%);
+  opacity: 0.48;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.panel.sticky {
+  position: sticky;
 }
 
 .panel-muted {
-  -webkit-backdrop-filter: blur(30px) saturate(165%);
-  backdrop-filter: blur(30px) saturate(165%);
+  -webkit-backdrop-filter: blur(32px) saturate(175%);
+  backdrop-filter: blur(32px) saturate(175%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.18)),
-    rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.58);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.02)),
+    rgba(255, 255, 255, 0.07);
+  background-clip: padding-box;
+  border: 1px solid rgba(255, 255, 255, 0.68);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 18px 44px rgba(43, 52, 71, 0.14);
+    inset 1px 1px 0 rgba(255, 255, 255, 0.82),
+    inset -1px -1px 0 rgba(39, 50, 68, 0.08),
+    inset 18px 20px 46px rgba(255, 255, 255, 0.16),
+    inset -18px -22px 44px rgba(42, 64, 90, 0.1),
+    0 18px 54px rgba(43, 52, 71, 0.13);
+  isolation: isolate;
+  overflow: hidden;
+  position: relative;
+}
+
+.panel-muted::before {
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.08) 22%, transparent 42%),
+    radial-gradient(80% 56% at 12% 8%, rgba(255, 255, 255, 0.42), transparent 58%),
+    radial-gradient(60% 50% at 100% 100%, rgba(255, 143, 74, 0.14), transparent 58%);
+  border-radius: inherit;
+  content: "";
+  inset: 0;
+  opacity: 0.62;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.panel-muted::after {
+  border-radius: inherit;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    inset 0 0 18px rgba(255, 255, 255, 0.18);
+  content: "";
+  inset: 1px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 0;
+}
+
+.panel-muted > * {
+  position: relative;
+  z-index: 1;
 }
 
 .soft-grid {
@@ -111,11 +199,14 @@ body {
 .glass-button {
   -webkit-backdrop-filter: blur(24px) saturate(170%);
   backdrop-filter: blur(24px) saturate(170%);
-  background: rgba(255, 255, 255, 0.26);
-  border: 1px solid rgba(255, 255, 255, 0.58);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.38), rgba(255, 255, 255, 0.08)),
+    rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.68);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.78),
-    0 10px 28px rgba(42, 52, 70, 0.14);
+    inset 1px 1px 0 rgba(255, 255, 255, 0.82),
+    inset -1px -1px 0 rgba(39, 50, 68, 0.08),
+    0 10px 28px rgba(42, 52, 70, 0.12);
 }
 
 .liquid-text {
