@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #c7d0df;
-  --foreground: #273244;
+  --background: #121418;
+  --foreground: #eef2f7;
 }
 
 @theme inline {
@@ -19,18 +19,16 @@ body {
 }
 
 ::selection {
-  background: #ffffff;
-  color: #303747;
+  background: #eef2f7;
+  color: #121418;
 }
 
 .app-shell {
   background:
-    linear-gradient(126deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0) 24%),
-    linear-gradient(154deg, rgba(72, 160, 219, 0.72) 0%, rgba(72, 160, 219, 0) 35%),
-    linear-gradient(238deg, rgba(255, 125, 66, 0.68) 0%, rgba(255, 125, 66, 0) 38%),
-    linear-gradient(318deg, rgba(140, 126, 221, 0.66) 0%, rgba(140, 126, 221, 0) 44%),
-    linear-gradient(72deg, rgba(65, 184, 199, 0.24) 0%, rgba(65, 184, 199, 0) 32%),
-    linear-gradient(180deg, #d7deeb 0%, #b9c5d7 48%, #8f9bad 100%);
+    radial-gradient(circle at 18% 18%, rgba(236, 239, 244, 0.13), transparent 30%),
+    radial-gradient(circle at 80% 22%, rgba(180, 186, 198, 0.09), transparent 34%),
+    radial-gradient(circle at 50% 88%, rgba(255, 255, 255, 0.07), transparent 42%),
+    linear-gradient(180deg, #22252d 0%, #171a20 48%, #0d0f13 100%);
   isolation: isolate;
   overflow: hidden;
   position: relative;
@@ -38,8 +36,8 @@ body {
 
 .app-shell::before {
   background:
-    linear-gradient(112deg, transparent 0%, rgba(255, 255, 255, 0.16) 16%, transparent 31%),
-    linear-gradient(292deg, transparent 0%, rgba(255, 222, 185, 0.18) 19%, transparent 44%);
+    linear-gradient(112deg, transparent 0%, rgba(255, 255, 255, 0.045) 16%, transparent 31%),
+    linear-gradient(292deg, transparent 0%, rgba(220, 225, 234, 0.04) 19%, transparent 44%);
   content: "";
   inset: 0;
   pointer-events: none;
@@ -49,12 +47,12 @@ body {
 
 .app-shell::after {
   background:
-    conic-gradient(from 140deg at 22% 18%, rgba(255, 255, 255, 0.22), rgba(31, 144, 205, 0.36), rgba(244, 118, 62, 0.44), rgba(145, 128, 224, 0.34), rgba(255, 255, 255, 0.22)),
-    linear-gradient(120deg, rgba(39, 50, 68, 0.12), rgba(255, 255, 255, 0.05));
+    conic-gradient(from 140deg at 22% 18%, rgba(255, 255, 255, 0.07), rgba(153, 163, 179, 0.08), rgba(222, 226, 234, 0.07), rgba(92, 99, 112, 0.09), rgba(255, 255, 255, 0.055)),
+    linear-gradient(120deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.01));
   content: "";
   filter: blur(38px);
   inset: -18%;
-  opacity: 0.64;
+  opacity: 0.38;
   pointer-events: none;
   position: fixed;
   transform: rotate(-8deg) scale(1.08);
@@ -62,20 +60,20 @@ body {
 }
 
 .panel {
-  -webkit-backdrop-filter: blur(50px) saturate(118%) contrast(104%);
-  backdrop-filter: blur(50px) saturate(118%) contrast(104%);
+  -webkit-backdrop-filter: blur(46px) saturate(92%) contrast(106%);
+  backdrop-filter: blur(46px) saturate(92%) contrast(106%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012) 42%, rgba(255, 255, 255, 0.002)),
-    rgba(255, 255, 255, 0.006);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.024), rgba(255, 255, 255, 0.006) 42%, rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.001);
   background-clip: padding-box;
-  border: 1px solid rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.31);
   box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.86),
-    inset -1px -1px 0 rgba(39, 50, 68, 0.12),
-    inset 20px 24px 54px rgba(255, 255, 255, 0.038),
-    inset -28px -34px 60px rgba(42, 64, 90, 0.16),
-    0 26px 80px rgba(43, 52, 71, 0.18),
-    0 1px 0 rgba(255, 255, 255, 0.54);
+    inset 1px 1px 0 rgba(255, 255, 255, 0.48),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.24),
+    inset 20px 24px 54px rgba(255, 255, 255, 0.012),
+    inset -28px -34px 60px rgba(0, 0, 0, 0.2),
+    0 26px 80px rgba(0, 0, 0, 0.32),
+    0 1px 0 rgba(255, 255, 255, 0.24);
   isolation: isolate;
   overflow: hidden;
   position: relative;
@@ -83,12 +81,12 @@ body {
 
 .panel::before {
   background:
-    linear-gradient(118deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.025) 14%, transparent 32%),
-    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.14), transparent 56%);
+    linear-gradient(118deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.008) 14%, transparent 32%),
+    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.04), transparent 56%);
   border-radius: inherit;
   content: "";
   inset: 0;
-  opacity: 0.38;
+  opacity: 0.3;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -96,20 +94,20 @@ body {
 
 .panel::after {
   background:
-    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.38) 48%, transparent 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.32), transparent 28%, rgba(255, 255, 255, 0.14)),
-    radial-gradient(90% 36% at 50% -8%, rgba(255, 255, 255, 0.42), transparent 64%);
+    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.16) 48%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.13), transparent 28%, rgba(255, 255, 255, 0.04)),
+    radial-gradient(90% 36% at 50% -8%, rgba(255, 255, 255, 0.18), transparent 64%);
   border-radius: inherit;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
-    inset 0 0 24px rgba(255, 255, 255, 0.2);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.2),
+    inset 0 0 24px rgba(255, 255, 255, 0.1);
   content: "";
   filter: blur(0.4px);
   inset: 1px;
   mask-image:
     linear-gradient(145deg, black 0%, transparent 48%, black 100%),
     radial-gradient(72% 72% at 50% 50%, transparent 54%, black 76%);
-  opacity: 0.5;
+  opacity: 0.44;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -125,19 +123,19 @@ body {
 }
 
 .panel-muted {
-  -webkit-backdrop-filter: blur(48px) saturate(118%) contrast(104%);
-  backdrop-filter: blur(48px) saturate(118%) contrast(104%);
+  -webkit-backdrop-filter: blur(44px) saturate(92%) contrast(106%);
+  backdrop-filter: blur(44px) saturate(92%) contrast(106%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.01) 50%, rgba(255, 255, 255, 0.002)),
-    rgba(255, 255, 255, 0.004);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.005) 50%, rgba(255, 255, 255, 0)),
+    rgba(255, 255, 255, 0.001);
   background-clip: padding-box;
-  border: 1px solid rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.27);
   box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.82),
-    inset -1px -1px 0 rgba(39, 50, 68, 0.1),
-    inset 18px 20px 46px rgba(255, 255, 255, 0.032),
-    inset -22px -26px 50px rgba(42, 64, 90, 0.14),
-    0 18px 54px rgba(43, 52, 71, 0.13);
+    inset 1px 1px 0 rgba(255, 255, 255, 0.46),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.22),
+    inset 18px 20px 46px rgba(255, 255, 255, 0.01),
+    inset -22px -26px 50px rgba(0, 0, 0, 0.17),
+    0 18px 54px rgba(0, 0, 0, 0.26);
   isolation: isolate;
   overflow: hidden;
   position: relative;
@@ -145,12 +143,12 @@ body {
 
 .panel-muted::before {
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.018) 18%, transparent 38%),
-    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.1), transparent 58%);
+    linear-gradient(120deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.006) 18%, transparent 38%),
+    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.035), transparent 58%);
   border-radius: inherit;
   content: "";
   inset: 0;
-  opacity: 0.34;
+  opacity: 0.27;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -158,12 +156,12 @@ body {
 
 .panel-muted::after {
   background:
-    radial-gradient(78% 38% at 52% -10%, rgba(255, 255, 255, 0.28), transparent 64%),
-    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.2) 48%, transparent 100%);
+    radial-gradient(78% 38% at 52% -10%, rgba(255, 255, 255, 0.11), transparent 64%),
+    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.08) 48%, transparent 100%);
   border-radius: inherit;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
-    inset 0 0 18px rgba(255, 255, 255, 0.18);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 0 18px rgba(255, 255, 255, 0.09);
   content: "";
   inset: 1px;
   pointer-events: none;
@@ -178,14 +176,14 @@ body {
 
 .soft-grid {
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.16) 1px, transparent 1px),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 38%, rgba(255, 255, 255, 0.1));
+    linear-gradient(rgba(255, 255, 255, 0.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.034) 1px, transparent 1px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.018), transparent 38%, rgba(255, 255, 255, 0.012));
   background-size: 68px 68px, 68px 68px, 100% 100%;
 }
 
 .glow-line {
-  background: linear-gradient(90deg, rgba(255,255,255,0), #ffffff, #c7f5ff, #ffb06f, rgba(255,255,255,0));
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.72), rgba(255,255,255,0.18), rgba(255,255,255,0));
 }
 
 .sparkline {
@@ -194,27 +192,27 @@ body {
 
 .bar-grid {
   background:
-    repeating-linear-gradient(90deg, transparent 0 42px, rgba(255, 255, 255, 0.16) 42px 43px),
-    repeating-linear-gradient(0deg, transparent 0 38px, rgba(255, 255, 255, 0.13) 38px 39px),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(111, 150, 196, 0.12));
+    repeating-linear-gradient(90deg, transparent 0 42px, rgba(255, 255, 255, 0.055) 42px 43px),
+    repeating-linear-gradient(0deg, transparent 0 38px, rgba(255, 255, 255, 0.045) 38px 39px),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.018), rgba(255, 255, 255, 0.006));
 }
 
 .glass-button {
-  -webkit-backdrop-filter: blur(42px) saturate(118%) contrast(104%);
-  backdrop-filter: blur(42px) saturate(118%) contrast(104%);
+  -webkit-backdrop-filter: blur(38px) saturate(92%) contrast(106%);
+  backdrop-filter: blur(38px) saturate(92%) contrast(106%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.01)),
-    rgba(255, 255, 255, 0.006);
-  border: 1px solid rgba(255, 255, 255, 0.68);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.006)),
+    rgba(255, 255, 255, 0.001);
+  border: 1px solid rgba(255, 255, 255, 0.3);
   box-shadow:
-    inset 1px 1px 0 rgba(255, 255, 255, 0.82),
-    inset -1px -1px 0 rgba(39, 50, 68, 0.08),
-    0 10px 28px rgba(42, 52, 70, 0.12);
+    inset 1px 1px 0 rgba(255, 255, 255, 0.46),
+    inset -1px -1px 0 rgba(0, 0, 0, 0.2),
+    0 10px 28px rgba(0, 0, 0, 0.24);
 }
 
 .liquid-text {
-  background: linear-gradient(92deg, #273244 0%, #34445c 38%, #3b7ea2 66%, #8a613f 100%);
+  background: linear-gradient(92deg, #f8fafc 0%, #cbd5e1 46%, #ffffff 100%);
   background-clip: text;
-  filter: drop-shadow(0 16px 28px rgba(42, 52, 70, 0.16));
+  filter: drop-shadow(0 16px 28px rgba(0, 0, 0, 0.28));
   color: transparent;
 }

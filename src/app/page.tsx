@@ -11,7 +11,7 @@ const apps = [
     href: "/blog",
     status: "Live",
     metric: "1/day",
-    accent: "from-cyan-200 to-violet-300",
+    accent: "from-white/80 to-zinc-400/40",
     description: "Generated morning readings built around one useful idea.",
   },
   {
@@ -19,7 +19,7 @@ const apps = [
     href: "/",
     status: "Core",
     metric: "Signals",
-    accent: "from-sky-200 to-cyan-300",
+    accent: "from-zinc-100/75 to-zinc-500/40",
     description: "The command center that will collect signals from every mini app.",
   },
   {
@@ -27,7 +27,7 @@ const apps = [
     href: "/",
     status: "Queued",
     metric: "TBD",
-    accent: "from-fuchsia-200 to-blue-300",
+    accent: "from-white/65 to-zinc-600/35",
     description: "Habits, finances, notes, health, or any module you want to add.",
   },
 ];
@@ -41,7 +41,7 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="app-shell min-h-screen text-slate-900">
+    <main className="app-shell min-h-screen text-zinc-50">
       <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-[96px_1fr]">
         <SideNav />
 
@@ -53,15 +53,15 @@ export default async function Home() {
               <div className="grid gap-6 p-5 md:grid-cols-[1.2fr_0.8fr] md:p-8">
                 <div>
                   <div className="flex flex-wrap gap-2">
-                    <Chip label="personal-os" tone="cyan" />
-                    <Chip label="daily intelligence" tone="orange" />
-                    <Chip label="local-first" tone="violet" />
+                    <Chip label="personal-os" tone="bright" />
+                    <Chip label="daily intelligence" tone="soft" />
+                    <Chip label="local-first" tone="dim" />
                   </div>
 
                   <h1 className="liquid-text mt-8 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-normal md:text-7xl">
                     Personal systems, rendered as a command dashboard.
                   </h1>
-                  <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-700">
+                  <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-300">
                     A liquid glass operating surface for daily reading, personal
                     signals, automations, and the mini apps that will power your day.
                   </p>
@@ -73,28 +73,28 @@ export default async function Home() {
             </section>
 
             <section className="grid gap-4 md:grid-cols-3">
-              <MetricCard label="Apps online" value={apps.length.toString()} delta="+ core ready" tone="cyan" />
-              <MetricCard label="Published reads" value={articles.length.toString()} delta="daily cadence" tone="orange" />
-              <MetricCard label="Automation" value="Ready" delta="script enabled" tone="violet" />
+              <MetricCard label="Apps online" value={apps.length.toString()} delta="+ core ready" tone="bright" />
+              <MetricCard label="Published reads" value={articles.length.toString()} delta="daily cadence" tone="soft" />
+              <MetricCard label="Automation" value="Ready" delta="script enabled" tone="dim" />
             </section>
 
             <section className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
               <div className="panel rounded-[28px] p-5">
                 <div className="flex items-center justify-between gap-4">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+                    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
                       System Activity
                     </p>
-                    <h2 className="mt-2 text-xl font-semibold text-slate-900">
+                    <h2 className="mt-2 text-xl font-semibold text-zinc-50">
                       Content and app signals
                     </h2>
                   </div>
-                  <span className="rounded-[28px] border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-xs font-medium text-slate-900">
+                  <span className="rounded-[28px] border border-white/18 bg-white/[0.02] px-3 py-1 text-xs font-medium text-zinc-100">
                     Healthy
                   </span>
                 </div>
 
-                <div className="bar-grid mt-7 flex h-56 items-end gap-3 rounded-[28px] border border-white/10 bg-white/[0.035] px-5 pb-5">
+                <div className="bar-grid mt-7 flex h-56 items-end gap-3 rounded-[28px] border border-white/10 bg-white/[0.012] px-5 pb-5">
                   {activityBars.map((height, index) => (
                     <div
                       key={index}
@@ -102,7 +102,7 @@ export default async function Home() {
                       aria-hidden="true"
                     >
                       <div
-                        className="rounded-t bg-gradient-to-t from-cyan-200 to-violet-300 shadow-[0_0_20px_rgba(125,211,252,0.22)]"
+                        className="rounded-t bg-gradient-to-t from-white/70 to-zinc-500/35 shadow-[0_0_20px_rgba(255,255,255,0.12)]"
                         style={{ height: `${height}%` }}
                       />
                       <div className="h-1 rounded bg-white/50" />
@@ -116,19 +116,19 @@ export default async function Home() {
                   <Link
                     key={app.name}
                     href={app.href}
-                    className="panel group rounded-[28px] p-5 transition hover:-translate-y-0.5 hover:border-cyan-100/35"
+                    className="panel group rounded-[28px] p-5 transition hover:-translate-y-0.5 hover:border-white/45"
                   >
                     <div className="flex items-center justify-between gap-4">
-                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
                         {app.status}
                       </p>
                       <span className={`h-2 w-10 rounded-full bg-gradient-to-r ${app.accent}`} />
                     </div>
                     <div className="mt-5 flex items-end justify-between gap-4">
-                      <h2 className="text-2xl font-semibold text-slate-900">{app.name}</h2>
-                      <p className="font-mono text-sm text-slate-700">{app.metric}</p>
+                      <h2 className="text-2xl font-semibold text-zinc-50">{app.name}</h2>
+                      <p className="font-mono text-sm text-zinc-300">{app.metric}</p>
                     </div>
-                    <p className="mt-4 leading-7 text-slate-700">{app.description}</p>
+                    <p className="mt-4 leading-7 text-zinc-300">{app.description}</p>
                   </Link>
                 ))}
               </div>
@@ -143,23 +143,23 @@ export default async function Home() {
 function TopBar() {
   return (
     <div className="mx-auto mb-5 flex max-w-7xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
-      <div className="flex items-center gap-2 text-sm text-slate-700">
-        <span className="text-slate-500">Dashboard</span>
+      <div className="flex items-center gap-2 text-sm text-zinc-300">
+        <span className="text-zinc-500">Dashboard</span>
         <span>/</span>
-        <span className="glass-button rounded-[28px] px-3 py-1 text-slate-900">
+        <span className="glass-button rounded-[28px] px-3 py-1 text-zinc-50">
           Personal OS
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-slate-700">
+        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-zinc-300">
           Last 24 hours
         </button>
-        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-slate-700">
+        <button className="glass-button h-9 rounded-[28px] px-3 text-sm text-zinc-300">
           UTC -03
         </button>
         <Link
           href="/blog"
-          className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_0_28px_rgba(140,236,255,0.22)] transition hover:bg-cyan-100"
+          className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-[0_0_28px_rgba(255,255,255,0.16)] transition hover:bg-zinc-100"
         >
           Open Blog
         </Link>
@@ -172,18 +172,18 @@ function SideNav() {
   return (
     <aside className="hidden lg:flex lg:items-start lg:justify-center lg:py-5">
       <div className="panel sticky top-5 flex w-16 flex-col items-center gap-3 rounded-[28px] p-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-[28px] bg-white text-sm font-black text-slate-700 shadow-[0_0_26px_rgba(140,236,255,0.24)]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-[28px] bg-white text-sm font-black text-zinc-900 shadow-[0_0_26px_rgba(255,255,255,0.16)]">
         OS
       </div>
       {["D", "B", "A", "S"].map((item) => (
         <div
           key={item}
-          className="glass-button flex h-10 w-10 items-center justify-center rounded-[28px] text-xs font-semibold text-slate-700"
+          className="glass-button flex h-10 w-10 items-center justify-center rounded-[28px] text-xs font-semibold text-zinc-300"
         >
           {item}
         </div>
       ))}
-      <div className="mt-24 h-10 w-10 rounded-[28px] border border-white/10 bg-white/[0.04]" />
+      <div className="mt-24 h-10 w-10 rounded-[28px] border border-white/10 bg-white/[0.015]" />
       </div>
     </aside>
   );
@@ -197,13 +197,13 @@ function TodayPanel({
   if (!latestArticle) {
     return (
       <aside className="panel-muted rounded-[28px] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-900">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-50">
           Today&apos;s reading
         </p>
-        <h2 className="mt-5 text-3xl font-semibold text-slate-900">
+        <h2 className="mt-5 text-3xl font-semibold text-zinc-50">
           No published articles yet.
         </h2>
-        <p className="mt-4 leading-7 text-slate-700">
+        <p className="mt-4 leading-7 text-zinc-300">
           Run `npm run db:migrate` and then `npm run article:generate` to create
           the first reading.
         </p>
@@ -213,18 +213,18 @@ function TodayPanel({
 
   return (
     <aside className="panel-muted rounded-[28px] p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-900">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-50">
         Today&apos;s reading
       </p>
-      <h2 className="mt-5 text-3xl font-semibold leading-tight text-slate-900">
+      <h2 className="mt-5 text-3xl font-semibold leading-tight text-zinc-50">
         {latestArticle.title}
       </h2>
-      <p className="mt-4 leading-7 text-slate-700">{latestArticle.summary}</p>
+      <p className="mt-4 leading-7 text-zinc-300">{latestArticle.summary}</p>
       <div className="mt-5 flex flex-wrap gap-2">
         {parseTags(latestArticle.tags).map((tag) => (
           <span
             key={tag}
-            className="rounded border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-slate-700"
+            className="rounded border border-white/10 bg-white/[0.025] px-3 py-1 text-xs text-zinc-300"
           >
             {tag}
           </span>
@@ -232,7 +232,7 @@ function TodayPanel({
       </div>
       <Link
         href={`/blog/${latestArticle.slug}`}
-        className="mt-6 inline-flex h-10 items-center rounded-[28px] bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-cyan-100"
+        className="mt-6 inline-flex h-10 items-center rounded-[28px] bg-white px-4 text-sm font-semibold text-zinc-900 transition hover:bg-zinc-100"
       >
         Read article
       </Link>
@@ -249,20 +249,20 @@ function MetricCard({
   label: string;
   value: string;
   delta: string;
-  tone: "cyan" | "orange" | "violet";
+  tone: "bright" | "soft" | "dim";
 }) {
   const tones = {
-    cyan: "from-cyan-200/70 to-cyan-200/5 text-slate-900",
-    orange: "from-fuchsia-200/70 to-fuchsia-200/5 text-slate-900",
-    violet: "from-violet-200/70 to-violet-200/5 text-slate-900",
+    bright: "from-white/50 to-zinc-500/5 text-zinc-200",
+    soft: "from-white/42 to-zinc-500/5 text-zinc-200",
+    dim: "from-white/36 to-zinc-500/5 text-zinc-200",
   };
 
   return (
     <div className="panel rounded-[28px] p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-600">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
         {label}
       </p>
-      <p className="mt-5 text-4xl font-semibold text-slate-900">{value}</p>
+      <p className="mt-5 text-4xl font-semibold text-zinc-50">{value}</p>
       <p className={`mt-3 text-sm font-medium ${tones[tone].split(" ").at(-1)}`}>
         {delta}
       </p>
@@ -271,11 +271,11 @@ function MetricCard({
   );
 }
 
-function Chip({ label, tone }: { label: string; tone: "cyan" | "orange" | "violet" }) {
+function Chip({ label, tone }: { label: string; tone: "bright" | "soft" | "dim" }) {
   const tones = {
-    cyan: "border-cyan-100/20 bg-cyan-100/10 text-slate-900",
-    orange: "border-fuchsia-100/20 bg-fuchsia-100/10 text-slate-900",
-    violet: "border-violet-100/20 bg-violet-100/10 text-slate-900",
+    bright: "border-white/18 bg-white/[0.025] text-zinc-200",
+    soft: "border-white/16 bg-white/[0.02] text-zinc-200",
+    dim: "border-white/14 bg-white/[0.018] text-zinc-200",
   };
 
   return (
