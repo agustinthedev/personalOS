@@ -62,19 +62,19 @@ body {
 }
 
 .panel {
-  -webkit-backdrop-filter: blur(42px) saturate(190%) contrast(106%);
-  backdrop-filter: blur(42px) saturate(190%) contrast(106%);
+  -webkit-backdrop-filter: blur(48px) saturate(210%) contrast(110%);
+  backdrop-filter: blur(48px) saturate(210%) contrast(110%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.045) 42%, rgba(255, 255, 255, 0.012)),
-    linear-gradient(315deg, rgba(255, 255, 255, 0.025), rgba(82, 143, 192, 0.075) 48%, rgba(255, 143, 74, 0.07)),
-    rgba(255, 255, 255, 0.035);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.018) 42%, rgba(255, 255, 255, 0.004)),
+    linear-gradient(315deg, rgba(255, 255, 255, 0.012), rgba(82, 143, 192, 0.055) 48%, rgba(255, 143, 74, 0.052)),
+    rgba(255, 255, 255, 0.012);
   background-clip: padding-box;
   border: 1px solid rgba(255, 255, 255, 0.72);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.86),
     inset -1px -1px 0 rgba(39, 50, 68, 0.12),
-    inset 20px 24px 54px rgba(255, 255, 255, 0.11),
-    inset -26px -32px 58px rgba(42, 64, 90, 0.15),
+    inset 20px 24px 54px rgba(255, 255, 255, 0.055),
+    inset -28px -34px 60px rgba(42, 64, 90, 0.18),
     0 26px 80px rgba(43, 52, 71, 0.18),
     0 1px 0 rgba(255, 255, 255, 0.54);
   isolation: isolate;
@@ -84,13 +84,13 @@ body {
 
 .panel::before {
   background:
-    linear-gradient(118deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.08) 16%, transparent 34%),
-    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.42), transparent 52%),
-    radial-gradient(64% 48% at 95% 92%, rgba(80, 171, 215, 0.16), transparent 58%);
+    linear-gradient(118deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.035) 14%, transparent 32%),
+    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.22), transparent 54%),
+    radial-gradient(64% 48% at 95% 92%, rgba(80, 171, 215, 0.12), transparent 60%);
   border-radius: inherit;
   content: "";
   inset: 0;
-  opacity: 0.58;
+  opacity: 0.44;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -98,9 +98,9 @@ body {
 
 .panel::after {
   background:
-    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.5) 48%, transparent 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.44), transparent 30%, rgba(255, 255, 255, 0.2)),
-    radial-gradient(90% 36% at 50% -8%, rgba(255, 255, 255, 0.6), transparent 62%);
+    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.38) 48%, transparent 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.32), transparent 28%, rgba(255, 255, 255, 0.14)),
+    radial-gradient(90% 36% at 50% -8%, rgba(255, 255, 255, 0.42), transparent 64%);
   border-radius: inherit;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.34),
@@ -111,7 +111,7 @@ body {
   mask-image:
     linear-gradient(145deg, black 0%, transparent 48%, black 100%),
     radial-gradient(72% 72% at 50% 50%, transparent 54%, black 76%);
-  opacity: 0.56;
+  opacity: 0.5;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -127,18 +127,18 @@ body {
 }
 
 .panel-muted {
-  -webkit-backdrop-filter: blur(40px) saturate(190%) contrast(106%);
-  backdrop-filter: blur(40px) saturate(190%) contrast(106%);
+  -webkit-backdrop-filter: blur(46px) saturate(210%) contrast(110%);
+  backdrop-filter: blur(46px) saturate(210%) contrast(110%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.045) 50%, rgba(255, 255, 255, 0.01)),
-    rgba(255, 255, 255, 0.032);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.078), rgba(255, 255, 255, 0.016) 50%, rgba(255, 255, 255, 0.004)),
+    rgba(255, 255, 255, 0.01);
   background-clip: padding-box;
   border: 1px solid rgba(255, 255, 255, 0.68);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.82),
     inset -1px -1px 0 rgba(39, 50, 68, 0.1),
-    inset 18px 20px 46px rgba(255, 255, 255, 0.09),
-    inset -20px -24px 48px rgba(42, 64, 90, 0.13),
+    inset 18px 20px 46px rgba(255, 255, 255, 0.045),
+    inset -22px -26px 50px rgba(42, 64, 90, 0.16),
     0 18px 54px rgba(43, 52, 71, 0.13);
   isolation: isolate;
   overflow: hidden;
@@ -147,13 +147,13 @@ body {
 
 .panel-muted::before {
   background:
-    linear-gradient(120deg, rgba(255, 255, 255, 0.58), rgba(255, 255, 255, 0.055) 20%, transparent 40%),
-    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.3), transparent 58%),
-    radial-gradient(60% 50% at 100% 100%, rgba(255, 143, 74, 0.12), transparent 58%);
+    linear-gradient(120deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.025) 18%, transparent 38%),
+    radial-gradient(78% 54% at 10% 6%, rgba(255, 255, 255, 0.16), transparent 58%),
+    radial-gradient(60% 50% at 100% 100%, rgba(255, 143, 74, 0.09), transparent 60%);
   border-radius: inherit;
   content: "";
   inset: 0;
-  opacity: 0.54;
+  opacity: 0.4;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -161,8 +161,8 @@ body {
 
 .panel-muted::after {
   background:
-    radial-gradient(78% 38% at 52% -10%, rgba(255, 255, 255, 0.42), transparent 62%),
-    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.3) 48%, transparent 100%);
+    radial-gradient(78% 38% at 52% -10%, rgba(255, 255, 255, 0.28), transparent 64%),
+    linear-gradient(92deg, transparent 0%, rgba(255, 255, 255, 0.2) 48%, transparent 100%);
   border-radius: inherit;
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.28),
@@ -203,11 +203,11 @@ body {
 }
 
 .glass-button {
-  -webkit-backdrop-filter: blur(32px) saturate(190%) contrast(106%);
-  backdrop-filter: blur(32px) saturate(190%) contrast(106%);
+  -webkit-backdrop-filter: blur(40px) saturate(210%) contrast(110%);
+  backdrop-filter: blur(40px) saturate(210%) contrast(110%);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.045)),
-    rgba(255, 255, 255, 0.035);
+    linear-gradient(145deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.018)),
+    rgba(255, 255, 255, 0.012);
   border: 1px solid rgba(255, 255, 255, 0.68);
   box-shadow:
     inset 1px 1px 0 rgba(255, 255, 255, 0.82),
