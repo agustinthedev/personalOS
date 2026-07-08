@@ -30,7 +30,7 @@ export default async function BlogPage() {
 
           {articles.length > 0 ? (
             <div className="grid gap-4">
-              {articles.map((article, index) => (
+              {articles.map((article) => (
                 <Link
                   key={article.id}
                   href={`/blog/${article.slug}`}
@@ -43,7 +43,8 @@ export default async function BlogPage() {
                           Published
                         </span>
                         <span className="font-mono text-xs text-zinc-500">
-                          #{String(index + 1).padStart(2, "0")} - {article.topic} - {article.readingMinutes} min
+                          {formatPublishedDate(article.publishedAt)} - {article.topic} -{" "}
+                          {article.readingMinutes} min
                         </span>
                       </div>
                       <h2 className="mt-5 max-w-4xl text-3xl font-semibold leading-tight text-zinc-50">
@@ -85,4 +86,16 @@ export default async function BlogPage() {
       </section>
     </main>
   );
+}
+
+function formatPublishedDate(date: Date | null) {
+  if (!date) {
+    return "Draft date";
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
 }
