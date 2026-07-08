@@ -49,7 +49,13 @@ async function main() {
   });
 
   console.log(`Article created: ${created.title}`);
-  console.log(`Local URL: http://localhost:3000/blog/${created.slug}`);
+  const articleUrl = buildArticleUrl(created.slug);
+  console.log(`Local URL: ${articleUrl}`);
+
+  await notifyTelegram({
+    title: created.title,
+    url: articleUrl,
+  });
 }
 
 async function generateWithOpenAI(
@@ -192,6 +198,60 @@ async function uniqueSlug(baseSlug: string) {
   }
 
   return slug;
+}
+
+function buildArticleUrl(slug: string) {
+  const baseUrl = process.env.APP_BASE_URL?.trim() || "http://localhost:3000";
+  return `${baseUrl.replace(/\/$/, "")}/blog/${slug}`;
+}
+
+async function notifyTelegram({
+  title,
+  url,
+}: {
+  title: string;
+  url: string;
+}) {
+  const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
+  const chatId = process.env.TELEGRAM_CHAT_ID?.trim();
+
+  if (!botToken || !chatId) {
+    console.log("Telegram notification skipped: missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID.");
+    return;
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      disable_web_page_preview: false,
+      parse_mode: "HTML",
+      text: [
+        "📰 <b>New blog article available</b>",
+        "",
+        escapeHtml(title),
+        url,
+      ].join("\n"),
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    console.error(`Telegram notification failed: ${response.status} ${details}`);
+    return;
+  }
+
+  console.log("Telegram notification sent.");
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 main()

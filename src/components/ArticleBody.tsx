@@ -8,39 +8,47 @@ type ArticleBodyProps = {
 
 export function ArticleBody({ body, title }: ArticleBodyProps) {
   return (
-    <ReactMarkdown
-      components={{
-        h2: ({ children }) => (
-          <h2 className="pt-6 text-2xl font-semibold text-zinc-50">{children}</h2>
-        ),
-        h3: ({ children }) => (
-          <h3 className="pt-4 text-xl font-semibold text-zinc-100">{children}</h3>
-        ),
-        p: ({ children }) => (
-          <p className="text-[17px] leading-8 text-zinc-300">{children}</p>
-        ),
-        strong: ({ children }) => (
-          <strong className="font-semibold text-zinc-50">{children}</strong>
-        ),
-        ul: ({ children }) => (
-          <ul className="list-disc space-y-2 pl-6 text-[17px] leading-8 text-zinc-300">
-            {children}
-          </ul>
-        ),
-        ol: ({ children }) => (
-          <ol className="list-decimal space-y-2 pl-6 text-[17px] leading-8 text-zinc-300">
-            {children}
-          </ol>
-        ),
-        li: ({ children }) => <li className="pl-1">{children}</li>,
-        blockquote: ({ children }) => (
-          <blockquote className="border-l-2 border-orange-300/60 pl-5 text-zinc-300">
-            {children}
-          </blockquote>
-        ),
-      }}
-    >
-      {sanitizeArticleBody(body, title)}
-    </ReactMarkdown>
+    <div>
+      <ReactMarkdown
+        components={{
+          h2: ({ children }) => (
+            <h2 className="mb-5 mt-12 text-2xl font-semibold leading-tight text-zinc-50 first:mt-0">
+              {children}
+            </h2>
+          ),
+          h3: ({ children }) => (
+            <h3 className="mb-4 mt-9 text-xl font-semibold leading-tight text-zinc-100">
+              {children}
+            </h3>
+          ),
+          p: ({ children }) => (
+            <p className="mb-5 text-[17px] leading-8 text-zinc-300 last:mb-0">
+              {children}
+            </p>
+          ),
+          strong: ({ children }) => (
+            <strong className="font-semibold text-zinc-50">{children}</strong>
+          ),
+          ul: ({ children }) => (
+            <ul className="mb-6 mt-3 list-disc space-y-3 pl-6 text-[17px] leading-8 text-zinc-300">
+              {children}
+            </ul>
+          ),
+          ol: ({ children }) => (
+            <ol className="mb-6 mt-3 list-decimal space-y-3 pl-6 text-[17px] leading-8 text-zinc-300">
+              {children}
+            </ol>
+          ),
+          li: ({ children }) => <li className="pl-1">{children}</li>,
+          blockquote: ({ children }) => (
+            <blockquote className="my-6 border-l-2 border-orange-300/60 pl-5 text-zinc-300">
+              {children}
+            </blockquote>
+          ),
+        }}
+      >
+        {sanitizeArticleBody(body, title)}
+      </ReactMarkdown>
+    </div>
   );
 }
