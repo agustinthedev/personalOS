@@ -159,7 +159,7 @@ function TopBar() {
         </button>
         <Link
           href="/blog"
-          className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_28px_rgba(140,236,255,0.22)] transition hover:bg-cyan-100"
+          className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-[0_0_28px_rgba(140,236,255,0.22)] transition hover:bg-cyan-100"
         >
           Open Blog
         </Link>
@@ -172,7 +172,7 @@ function SideNav() {
   return (
     <aside className="hidden lg:flex lg:items-start lg:justify-center lg:py-5">
       <div className="panel sticky top-5 flex w-16 flex-col items-center gap-3 rounded-[28px] p-3">
-      <div className="flex h-10 w-10 items-center justify-center rounded-[28px] bg-white text-sm font-black text-slate-950 shadow-[0_0_26px_rgba(140,236,255,0.24)]">
+      <div className="flex h-10 w-10 items-center justify-center rounded-[28px] bg-white text-sm font-black text-slate-700 shadow-[0_0_26px_rgba(140,236,255,0.24)]">
         OS
       </div>
       {["D", "B", "A", "S"].map((item) => (
@@ -232,7 +232,7 @@ function TodayPanel({
       </div>
       <Link
         href={`/blog/${latestArticle.slug}`}
-        className="mt-6 inline-flex h-10 items-center rounded-[28px] bg-white px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100"
+        className="mt-6 inline-flex h-10 items-center rounded-[28px] bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-cyan-100"
       >
         Read article
       </Link>
