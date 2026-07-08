@@ -5,69 +5,83 @@ export default async function BlogPage() {
   const articles = await getPublishedArticles();
 
   return (
-    <main className="min-h-screen bg-[#f7f5f0]">
-      <header className="border-b border-stone-300">
-        <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10 md:px-10">
-          <Link href="/" className="text-sm font-medium text-teal-800">
-            Personal OS
-          </Link>
-          <div>
-            <p className="text-sm font-medium uppercase tracking-[0.18em] text-stone-500">
-              Daily Blog
-            </p>
-            <h1 className="mt-3 text-5xl font-semibold text-stone-950">
-              Morning readings
-            </h1>
-          </div>
-        </div>
-      </header>
-
-      <section className="mx-auto max-w-6xl px-6 py-8 md:px-10">
-        {articles.length > 0 ? (
-          <div className="grid gap-4">
-            {articles.map((article) => (
-              <Link
-                key={article.id}
-                href={`/blog/${article.slug}`}
-                className="border border-stone-300 bg-white p-5 transition hover:border-teal-800"
-              >
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <p className="text-sm text-stone-500">
-                      {article.topic} · {article.readingMinutes} min
-                    </p>
-                    <h2 className="mt-2 text-2xl font-semibold text-stone-950">
-                      {article.title}
-                    </h2>
-                    <p className="mt-3 max-w-3xl leading-7 text-stone-700">
-                      {article.summary}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2 md:max-w-xs md:justify-end">
-                    {parseTags(article.tags).map((tag) => (
-                      <span
-                        key={tag}
-                        className="border border-stone-300 px-3 py-1 text-sm text-stone-700"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+    <main className="app-shell min-h-screen text-zinc-100">
+      <section className="soft-grid px-4 py-5 md:px-8">
+        <div className="mx-auto max-w-7xl">
+          <header className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <Link href="/" className="text-sm font-medium text-cyan-300">
+                Personal OS
               </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="border border-stone-300 bg-white p-6">
-            <h2 className="text-2xl font-semibold text-stone-950">
-              No articles yet.
-            </h2>
-            <p className="mt-3 leading-7 text-stone-700">
-              The initial flow is ready. Run the migration and generate the first
-              article to populate this view.
-            </p>
-          </div>
-        )}
+              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">
+                Daily Blog
+              </p>
+              <h1 className="mt-3 text-5xl font-semibold text-zinc-50 md:text-7xl">
+                Morning readings
+              </h1>
+            </div>
+            <div className="panel-muted rounded-[8px] p-4 text-sm text-zinc-400">
+              <p className="font-mono text-zinc-500">report.blog.status</p>
+              <p className="mt-2 text-2xl font-semibold text-zinc-50">
+                {articles.length} published
+              </p>
+            </div>
+          </header>
+
+          {articles.length > 0 ? (
+            <div className="grid gap-4">
+              {articles.map((article, index) => (
+                <Link
+                  key={article.id}
+                  href={`/blog/${article.slug}`}
+                  className="panel group overflow-hidden rounded-[8px] transition hover:-translate-y-0.5 hover:border-orange-300/40"
+                >
+                  <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_260px]">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded border border-orange-300/20 bg-orange-300/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange-200">
+                          Published
+                        </span>
+                        <span className="font-mono text-xs text-zinc-500">
+                          #{String(index + 1).padStart(2, "0")} - {article.topic} - {article.readingMinutes} min
+                        </span>
+                      </div>
+                      <h2 className="mt-5 max-w-4xl text-3xl font-semibold leading-tight text-zinc-50">
+                        {article.title}
+                      </h2>
+                      <p className="mt-4 max-w-3xl leading-7 text-zinc-400">
+                        {article.summary}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col justify-between gap-5 border-t border-white/8 pt-5 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+                      <div className="flex flex-wrap gap-2 md:justify-end">
+                        {parseTags(article.tags).map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-zinc-300"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="h-20 rounded bg-gradient-to-t from-cyan-300/50 to-cyan-300/5 sparkline" />
+                    </div>
+                  </div>
+                  <div className="glow-line h-1 opacity-60 transition group-hover:opacity-100" />
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <div className="panel rounded-[8px] p-6">
+              <h2 className="text-2xl font-semibold text-zinc-50">No articles yet.</h2>
+              <p className="mt-3 leading-7 text-zinc-400">
+                The initial flow is ready. Run the migration and generate the first
+                article to populate this view.
+              </p>
+            </div>
+          )}
+        </div>
       </section>
     </main>
   );

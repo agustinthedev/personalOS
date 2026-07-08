@@ -9,11 +9,11 @@ export function ArticleBody({ body }: ArticleBodyProps) {
     .filter(Boolean);
 
   return (
-    <div className="space-y-5 text-[17px] leading-8 text-stone-800">
+    <div className="space-y-5 text-[17px] leading-8 text-zinc-300">
       {blocks.map((block, index) => {
         if (block.startsWith("## ")) {
           return (
-            <h2 key={index} className="pt-5 text-2xl font-semibold text-stone-950">
+            <h2 key={index} className="pt-6 text-2xl font-semibold text-zinc-50">
               {block.replace(/^## /, "")}
             </h2>
           );

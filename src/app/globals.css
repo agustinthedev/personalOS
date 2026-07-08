@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f7f5f0;
-  --foreground: #191816;
+  --background: #07080c;
+  --foreground: #f4f2ea;
 }
 
 @theme inline {
@@ -19,6 +19,47 @@ body {
 }
 
 ::selection {
-  background: #2f6f73;
-  color: #ffffff;
+  background: #ff7a45;
+  color: #07080c;
+}
+
+.app-shell {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(139, 92, 246, 0.22), transparent 28rem),
+    radial-gradient(circle at 84% 8%, rgba(255, 122, 69, 0.16), transparent 24rem),
+    linear-gradient(180deg, #0d0e15 0%, #07080c 46%, #050507 100%);
+}
+
+.panel {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.028)),
+    rgba(14, 15, 22, 0.92);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 24px 70px rgba(0, 0, 0, 0.28);
+}
+
+.panel-muted {
+  border: 1px solid rgba(255, 255, 255, 0.075);
+  background: rgba(14, 15, 20, 0.78);
+}
+
+.soft-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+.glow-line {
+  background: linear-gradient(90deg, #ff4d8d, #ff9f43, #36f1e3, #8b5cf6);
+}
+
+.sparkline {
+  clip-path: polygon(0 74%, 12% 68%, 24% 62%, 36% 66%, 48% 42%, 60% 48%, 72% 34%, 84% 28%, 100% 18%, 100% 100%, 0 100%);
+}
+
+.bar-grid {
+  background:
+    repeating-linear-gradient(90deg, transparent 0 42px, rgba(255, 255, 255, 0.06) 42px 43px),
+    repeating-linear-gradient(0deg, transparent 0 38px, rgba(255, 255, 255, 0.05) 38px 39px);
 }
