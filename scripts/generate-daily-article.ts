@@ -234,7 +234,57 @@ async function notifyTelegram({
         "",
         `<b>${escapeHtml(title)}</b>`,
         "",
-        `<a href="${escapeHtmlAttribute(url)}">Open article</a>`,
+        escapeHtml(url),
+      ].join("\n"),
+      reply_markup: {
+        inline_keyboard: [
+          [
+            {
+              text: "Open article",
+              url,
+            },
+          ],
+        ],
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    console.error(`Telegram notification failed: ${response.status} ${details}`);
+    if (details.includes("BUTTON_URL_INVALID")) {
+      await notifyTelegramWithoutButton({ botToken, chatId, title, url });
+    }
+    return;
+  }
+
+  console.log("Telegram notification sent.");
+}
+
+async function notifyTelegramWithoutButton({
+  botToken,
+  chatId,
+  title,
+  url,
+}: {
+  botToken: string;
+  chatId: string;
+  title: string;
+  url: string;
+}) {
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      chat_id: chatId,
+      disable_web_page_preview: false,
+      parse_mode: "HTML",
+      text: [
+        "📰 <b>New blog article available</b>",
+        "",
+        `<b>${escapeHtml(title)}</b>`,
         "",
         escapeHtml(url),
       ].join("\n"),
@@ -243,11 +293,11 @@ async function notifyTelegram({
 
   if (!response.ok) {
     const details = await response.text();
-    console.error(`Telegram notification failed: ${response.status} ${details}`);
+    console.error(`Telegram fallback notification failed: ${response.status} ${details}`);
     return;
   }
 
-  console.log("Telegram notification sent.");
+  console.log("Telegram notification sent without button.");
 }
 
 function escapeHtml(value: string) {
@@ -255,10 +305,6 @@ function escapeHtml(value: string) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
-}
-
-function escapeHtmlAttribute(value: string) {
-  return escapeHtml(value).replace(/"/g, "&quot;");
 }
 
 main()
