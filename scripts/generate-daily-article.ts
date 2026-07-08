@@ -6,14 +6,14 @@ import { z } from "zod";
 const prisma = new PrismaClient();
 
 const topics = [
-  "Sistemas personales de productividad",
-  "Pensamiento estrategico",
-  "Aprendizaje acelerado",
-  "IA aplicada al trabajo diario",
-  "Filosofia practica",
-  "Toma de decisiones",
-  "Creatividad y escritura",
-  "Salud mental para trabajo profundo",
+  "Personal productivity systems",
+  "Strategic thinking",
+  "Accelerated learning",
+  "AI applied to daily work",
+  "Practical philosophy",
+  "Decision-making",
+  "Creativity and writing",
+  "Mental health for deep work",
 ];
 
 const articleSchema = z.object({
@@ -52,8 +52,8 @@ async function main() {
     },
   });
 
-  console.log(`Articulo creado: ${created.title}`);
-  console.log(`URL local: http://localhost:3000/blog/${created.slug}`);
+  console.log(`Article created: ${created.title}`);
+  console.log(`Local URL: http://localhost:3000/blog/${created.slug}`);
 }
 
 function pickTopic() {
@@ -70,16 +70,16 @@ async function generateWithOpenAI(topic: string): Promise<GeneratedArticle> {
       {
         role: "system",
         content:
-          "Sos un editor de un blog personal de aprendizaje. Escribis en espanol rioplatense claro, sobrio y practico.",
+          "You are the editor of a personal learning blog. Write in clear, practical English with a calm and thoughtful tone.",
       },
       {
         role: "user",
         content: [
-          "Genera un articulo para una lectura matinal de 10 a 15 minutos.",
+          "Generate an article for a 10 to 15 minute morning reading.",
           `Tema: ${topic}.`,
-          "Debe tener ideas accionables, ejemplos concretos y una estructura en Markdown con secciones ##.",
-          "No uses relleno, tono motivacional vacio ni listas superficiales.",
-          "Devolve JSON valido con: title, subtitle, summary, body, topic, tags.",
+          "It should include actionable ideas, concrete examples, and a Markdown structure with ## sections.",
+          "Avoid filler, empty motivational language, and shallow lists.",
+          "Return valid JSON with: title, subtitle, summary, body, topic, tags.",
         ].join("\n"),
       },
     ],
@@ -96,24 +96,24 @@ async function generateWithOpenAI(topic: string): Promise<GeneratedArticle> {
 
 function generateFallbackArticle(topic: string): GeneratedArticle {
   return {
-    title: `Una practica simple para pensar mejor sobre ${topic.toLowerCase()}`,
+    title: `A simple practice for thinking better about ${topic.toLowerCase()}`,
     subtitle:
-      "Un marco breve para convertir una lectura matinal en decisiones mas claras durante el dia.",
+      "A short framework for turning a morning reading into clearer decisions during the day.",
     summary:
-      "Una propuesta inicial para usar el blog diario como ritual de pensamiento: leer, extraer una idea, conectarla con el dia y cerrar con una accion concreta.",
+      "An initial proposal for using the daily blog as a thinking ritual: read, extract one idea, connect it to the day, and close with a concrete action.",
     topic,
-    tags: ["aprendizaje", "foco", "sistemas personales", "rutina"],
+    tags: ["learning", "focus", "personal systems", "routine"],
     body: [
-      "## La lectura como arranque del sistema",
-      "Un blog automatizado no tiene que ser una fabrica de texto. Puede funcionar como una pequena ceremonia de entrada: una pieza diaria que te pone frente a una idea util antes de que el ruido del dia empiece a marcar prioridades. La clave no es leer mas, sino leer con una pregunta activa.",
-      "Esa pregunta puede ser simple: que cambia en mi forma de trabajar si tomo esta idea en serio durante las proximas ocho horas. Con eso, el articulo deja de ser contenido y pasa a ser combustible para una decision.",
-      "## Un metodo de tres movimientos",
-      "- Detectar una idea que valga la pena probar hoy.\n- Traducirla a un comportamiento observable.\n- Revisar al final del dia si produjo claridad, energia o mejor criterio.",
-      "Este metodo evita que la lectura quede separada de la vida real. Si el tema es productividad, la accion podria ser bloquear noventa minutos para una tarea importante. Si el tema es pensamiento estrategico, podria ser escribir tres opciones antes de elegir una. Si el tema es salud mental, podria ser proteger una pausa sin pantallas.",
-      "## Como usar Personal OS para cerrar el loop",
-      "La arquitectura del sistema deberia permitir que cada mini app produzca senales para el dashboard. En el caso del blog, esas senales podrian ser articulos leidos, temas repetidos, ideas guardadas, acciones derivadas y una pequena nota de impacto. Al principio alcanza con publicar y leer. Despues conviene medir que ideas vuelven, cuales te mueven y cuales se pierden.",
-      "## La accion de hoy",
-      "Elegir una frase de esta lectura y convertirla en una regla para el dia. No una regla perfecta, solo una lo bastante concreta como para poder cumplirla o romperla. Ahi empieza a aparecer el valor de un sistema operativo personal: no en acumular informacion, sino en transformar informacion en comportamiento.",
+      "## Reading as system boot",
+      "An automated blog does not need to be a text factory. It can work as a small entry ritual: one daily piece that puts a useful idea in front of you before the noise of the day starts setting priorities. The key is not to read more, but to read with an active question.",
+      "That question can be simple: what changes in the way I work if I take this idea seriously for the next eight hours. With that, the article stops being content and becomes fuel for a decision.",
+      "## A three-move method",
+      "- Detect one idea worth testing today.\n- Translate it into an observable behavior.\n- Review at the end of the day whether it produced clarity, energy, or better judgment.",
+      "This method keeps reading connected to real life. If the topic is productivity, the action might be blocking ninety minutes for an important task. If the topic is strategic thinking, it might be writing three options before choosing one. If the topic is mental health, it might be protecting a screen-free pause.",
+      "## Using Personal OS to close the loop",
+      "The system architecture should allow each mini app to produce signals for the dashboard. For the blog, those signals could include articles read, repeated topics, saved ideas, derived actions, and a small impact note. At first, publishing and reading is enough. Later, it becomes useful to measure which ideas return, which ones move you, and which ones disappear.",
+      "## Today's action",
+      "Choose one sentence from this reading and turn it into a rule for the day. Not a perfect rule, just one concrete enough to either follow or break. That is where the value of a personal operating system begins to show up: not in accumulating information, but in turning information into behavior.",
     ].join("\n\n"),
   };
 }

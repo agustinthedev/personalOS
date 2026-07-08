@@ -19,7 +19,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     <main className="min-h-screen bg-[#f7f5f0]">
       <article className="mx-auto max-w-3xl px-6 py-10 md:px-10">
         <Link href="/blog" className="text-sm font-medium text-teal-800">
-          Volver al blog
+          Back to blog
         </Link>
 
         <header className="mt-8 border-b border-stone-300 pb-8">

@@ -13,10 +13,10 @@ export default async function BlogPage() {
           </Link>
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-stone-500">
-              Blog diario
+              Daily Blog
             </p>
             <h1 className="mt-3 text-5xl font-semibold text-stone-950">
-              Lecturas para la mañana
+              Morning readings
             </h1>
           </div>
         </div>
@@ -60,11 +60,11 @@ export default async function BlogPage() {
         ) : (
           <div className="border border-stone-300 bg-white p-6">
             <h2 className="text-2xl font-semibold text-stone-950">
-              Todavia no hay articulos.
+              No articles yet.
             </h2>
             <p className="mt-3 leading-7 text-stone-700">
-              El flujo inicial esta listo. Ejecuta la migracion y genera el primer
-              articulo para poblar esta vista.
+              The initial flow is ready. Run the migration and generate the first
+              article to populate this view.
             </p>
           </div>
         )}

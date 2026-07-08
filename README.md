@@ -1,17 +1,17 @@
 # Personal OS
 
-Personal OS es una base para construir mini aplicaciones personales y un dashboard que pueda leer señales de todas ellas.
+Personal OS is a foundation for building personal mini apps and a dashboard that can read signals from all of them.
 
-La primera mini app es `Blog diario`: un generador de artículos cortos para lectura matinal. El flujo actual crea un artículo, lo guarda en SQLite y lo muestra en `/blog`.
+The first mini app is `Daily Blog`: a short-form article generator for morning reading. The current flow creates an article, stores it in SQLite, and displays it at `/blog`.
 
 ## Stack
 
-- Next.js con App Router para frontend y rutas server-side.
-- Prisma + SQLite para persistencia local.
-- Scripts TypeScript con `tsx` para jobs automatizables.
-- OpenAI opcional para generación real de artículos.
+- Next.js with the App Router for frontend and server-side routes.
+- Prisma + SQLite for local persistence.
+- TypeScript scripts with `tsx` for schedulable jobs.
+- Optional OpenAI integration for real article generation.
 
-## Comandos
+## Commands
 
 ```bash
 npm run dev
@@ -21,20 +21,20 @@ npm run db:migrate
 npm run article:generate
 ```
 
-## Flujo del blog
+## Blog Flow
 
-1. `npm run article:generate` elige un tema del calendario.
-2. Si existe `OPENAI_API_KEY`, genera el artículo con IA.
-3. Si no existe, crea un artículo local de prueba.
-4. Guarda el artículo publicado en SQLite.
-5. El dashboard `/` y el índice `/blog` lo leen desde la DB.
+1. `npm run article:generate` picks a topic from the calendar rotation.
+2. If `OPENAI_API_KEY` exists, it generates the article with AI.
+3. If it does not exist, it creates a local fallback article.
+4. It stores the published article in SQLite.
+5. The dashboard `/` and the index `/blog` read it from the database.
 
-## Automatización diaria
+## Daily Automation
 
-En local, la forma más simple es programar:
+Locally, the simplest scheduled command is:
 
 ```bash
 npm run article:generate
 ```
 
-Cuando el proyecto se despliegue, conviene mover este job a un cron del proveedor, GitHub Actions, un worker propio o un scheduler externo.
+Once the project is deployed, this job should move to the hosting provider cron, GitHub Actions, a dedicated worker, or an external scheduler.

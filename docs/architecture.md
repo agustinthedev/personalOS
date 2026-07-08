@@ -1,43 +1,43 @@
-# Arquitectura de Personal OS
+# Personal OS Architecture
 
-## Idea central
+## Core Idea
 
-Personal OS se organiza como un conjunto de mini apps independientes que comparten infraestructura común. Cada app tiene sus propias pantallas, datos y jobs, pero publica señales simples para que el dashboard pueda resumir el estado del sistema.
+Personal OS is organized as a set of independent personal mini apps that share common infrastructure. Each app owns its screens, data, and jobs, while publishing simple signals that the dashboard can summarize.
 
-## Estructura inicial
+## Initial Structure
 
-- `src/app`: rutas de Next.js. El dashboard vive en `/` y cada mini app puede tener su propio segmento, por ejemplo `/blog`.
-- `src/lib`: acceso a datos y lógica compartida por la UI.
-- `src/components`: componentes reutilizables sin dueño de ruta.
-- `scripts`: jobs ejecutables fuera del request web, como la generación diaria de artículos.
-- `prisma`: schema, migraciones y DB local de desarrollo.
+- `src/app`: Next.js routes. The dashboard lives at `/`, and each mini app can own its own segment, such as `/blog`.
+- `src/lib`: data access and UI-facing shared logic.
+- `src/components`: reusable components that do not belong to a single route.
+- `scripts`: jobs that run outside web requests, such as daily article generation.
+- `prisma`: schema, migrations, and the local development database.
 
-## Modelo para nuevas mini apps
+## Model For New Mini Apps
 
-Cada app nueva debería definir:
+Each new app should define:
 
-1. Ruta principal: por ejemplo `/habits`, `/notes` o `/finance`.
-2. Modelos propios en Prisma.
-3. Funciones de lectura/escritura en `src/lib/<app>.ts`.
-4. Jobs opcionales en `scripts/<app>-*.ts`.
-5. Señales para el dashboard: conteos, pendientes, última actividad o alertas.
+1. Main route, for example `/habits`, `/notes`, or `/finance`.
+2. Its own Prisma models.
+3. Read/write functions in `src/lib/<app>.ts`.
+4. Optional jobs in `scripts/<app>-*.ts`.
+5. Dashboard signals: counts, pending items, latest activity, or alerts.
 
-## Blog diario
+## Daily Blog
 
-El blog tiene tres piezas:
+The blog has three parts:
 
-- Frontend: `/blog` lista artículos y `/blog/[slug]` muestra una lectura.
-- Datos: tabla `Article`.
+- Frontend: `/blog` lists articles and `/blog/[slug]` renders a reading view.
+- Data: the `Article` table.
 - Job: `scripts/generate-daily-article.ts`.
 
-El job está preparado para dos modos:
+The job supports two modes:
 
-- Con `OPENAI_API_KEY`: genera contenido real usando el SDK de OpenAI.
-- Sin `OPENAI_API_KEY`: genera contenido fallback para poder probar la app.
+- With `OPENAI_API_KEY`: it generates real content using the OpenAI SDK.
+- Without `OPENAI_API_KEY`: it creates fallback content so the app can be tested locally.
 
-## Próximas decisiones
+## Next Decisions
 
-- Definir la lista fina de temas del blog.
-- Elegir canal de notificación: Telegram, email, WhatsApp o push.
-- Decidir dónde va a correr el scheduler diario.
-- Agregar una tabla de `DashboardSignal` si varias apps empiezan a compartir métricas.
+- Define the final blog topic list.
+- Choose a notification channel: Telegram, email, WhatsApp, or push.
+- Decide where the daily scheduler will run.
+- Add a `DashboardSignal` table once multiple apps start sharing metrics.

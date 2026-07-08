@@ -3,22 +3,22 @@ import { getLatestArticle, getPublishedArticles, parseTags } from "@/lib/article
 
 const apps = [
   {
-    name: "Blog diario",
+    name: "Daily Blog",
     href: "/blog",
-    status: "Activo",
-    description: "Lecturas generadas para arrancar la mañana con una idea útil.",
+    status: "Active",
+    description: "Generated morning readings built around one useful idea.",
   },
   {
     name: "Dashboard",
     href: "/",
     status: "Base",
-    description: "El centro que va a reunir señales de todas las mini apps.",
+    description: "The hub that will collect signals from every mini app.",
   },
   {
-    name: "Proxima app",
+    name: "Next app",
     href: "/",
-    status: "Pendiente",
-    description: "Habitos, finanzas, notas, salud o cualquier modulo que quieras sumar.",
+    status: "Pending",
+    description: "Habits, finances, notes, health, or any module you want to add.",
   },
 ];
 
@@ -38,20 +38,20 @@ export default async function Home() {
                 Personal OS
               </p>
               <h1 className="mt-5 max-w-3xl text-5xl font-semibold leading-[1.02] text-stone-950 md:text-7xl">
-                Tu centro operativo para aprender, decidir y volver a foco.
+                Your operating center for learning, deciding, and getting back to focus.
               </h1>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
               <Metric label="Apps" value={apps.length.toString()} />
-              <Metric label="Articulos" value={articles.length.toString()} />
-              <Metric label="Ritmo" value="Diario" />
+              <Metric label="Articles" value={articles.length.toString()} />
+              <Metric label="Cadence" value="Daily" />
             </div>
           </div>
 
           <aside className="self-end border-l border-stone-300 pl-6">
             <p className="text-sm font-medium uppercase tracking-[0.18em] text-stone-500">
-              Lectura de hoy
+              Today&apos;s reading
             </p>
             {latestArticle ? (
               <div className="mt-5">
@@ -75,17 +75,17 @@ export default async function Home() {
                   href={`/blog/${latestArticle.slug}`}
                   className="mt-7 inline-flex h-11 items-center bg-stone-950 px-5 text-sm font-medium text-white transition hover:bg-teal-900"
                 >
-                  Leer articulo
+                  Read article
                 </Link>
               </div>
             ) : (
               <div className="mt-5">
                 <h2 className="text-3xl font-semibold text-stone-950">
-                  Todavia no hay articulos publicados.
+                  No published articles yet.
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-stone-700">
-                  Corre `npm run db:migrate` y despues `npm run article:generate`
-                  para crear la primera lectura.
+                  Run `npm run db:migrate` and then `npm run article:generate`
+                  to create the first reading.
                 </p>
               </div>
             )}
