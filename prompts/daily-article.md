@@ -59,16 +59,16 @@ The publication should not focus too narrowly on one category. Maintain editoria
 
 Use this approximate long-term distribution:
 
-* Economics, finance, and investing: 15%
-* Artificial intelligence: 15%
-* Technology, software, internet, chips, cloud, and computing: 13%
-* Science: physics, biology, chemistry, medicine, neuroscience: 12%
-* Engineering, infrastructure, energy, materials, transportation, and urbanism: 12%
+* Economics, finance, and investing: 14%
+* Artificial intelligence: 14%
+* Technology, software, internet, chips, cloud, and computing: 12%
+* Science: physics, biology, chemistry, medicine, neuroscience: 11%
+* Engineering, infrastructure, energy, materials, transportation, and urbanism: 11%
 * History, civilizations, geopolitics, and social change: 10%
 * Cryptocurrencies, blockchain, applied cryptography, and crypto markets: 8%
 * Companies, strategy, operations, productivity, and capital allocation: 8%
 * Sports, physiology, human performance, and training: 4%
-* Practical philosophy, decision-making, psychology, and pure mental models: 3%
+* Practical philosophy, decision-making, psychology, happiness, purpose, progress, ambition, and pure mental models: 8%
 
 These percentages should not be applied rigidly article by article. They are meant to preserve balance across many articles.
 
@@ -258,6 +258,53 @@ Do not turn these articles into long, detailed case studies. This publication is
 
 ---
 
+# Practical philosophy and human flourishing coverage
+
+Include practical philosophy and psychology as a meaningful recurring category, not only as an occasional ending.
+
+These articles should still be analytical and mechanism-based. They should not become motivational essays, generic self-help, or vague reflections. Treat concepts such as happiness, purpose, progress, ambition, status, meaning, discipline, attention, and fulfillment as systems that can be understood through psychology, philosophy, economics, history, biology, incentives, and mental models.
+
+Possible topics:
+
+* Happiness and hedonic adaptation
+* Purpose and identity
+* Progress and the psychology of visible improvement
+* Ambition and its trade-offs
+* The dark side of ambition: status anxiety, burnout, comparison, and endless goal escalation
+* Meaning versus pleasure
+* Discipline, desire, and delayed gratification
+* The relationship between freedom, responsibility, and constraint
+* Social comparison and status games
+* The psychology of enough
+* Intrinsic versus extrinsic motivation
+* Attention as a scarce resource
+* Agency, learned helplessness, and locus of control
+* The difference between achievement and fulfillment
+* Why comfort can reduce growth
+* Why progress often feels invisible while it is happening
+
+Possible technical concepts:
+
+* Hedonic adaptation
+* Incentive gradients
+* Opportunity cost
+* Social comparison theory
+* Identity-based behavior
+* Feedback loops
+* Delayed gratification
+* Loss aversion
+* Reference points
+* Goal displacement
+* Diminishing marginal utility
+* Self-determination theory
+* Cognitive load
+* Compounding habits
+* Status games
+
+The tone should be serious, precise, and grounded. A good article in this category should make the reader understand a human mechanism better, not merely feel encouraged.
+
+---
+
 # How to choose the article topic
 
 For each article, internally select four elements:
@@ -280,6 +327,10 @@ Examples:
 * Urbanism
 * Investing
 * Business strategy
+* Practical philosophy
+* Psychology
+* Human performance
+* Human flourishing
 
 ## 2. Concrete topic
 
@@ -300,6 +351,15 @@ Examples:
 * Formula 1
 * Stablecoins
 * Data centers
+* Happiness
+* Purpose
+* Progress
+* Ambition
+* Status anxiety
+* Hedonic adaptation
+* Social comparison
+* Motivation
+* Attention
 
 ## 3. Central technical concept
 
@@ -323,6 +383,13 @@ Examples:
 * Network effects
 * Capital allocation
 * Risk-adjusted returns
+* Hedonic adaptation
+* Social comparison
+* Delayed gratification
+* Goal displacement
+* Diminishing marginal utility
+* Identity-based behavior
+* Reference points
 
 ## 4. Reusable mental model
 
@@ -340,6 +407,11 @@ Examples:
 * A complex system cannot be understood by looking at a single variable.
 * Scarcity only matters when demand exists.
 * The best solution is often to remove a constraint, not add a feature.
+* Ambition is useful only when it is attached to a well-chosen target.
+* Progress that is not made visible often feels like stagnation.
+* A goal can stop serving you once it becomes a status game.
+* Happiness depends partly on outcomes, but also on expectations, comparison, and adaptation.
+* Purpose is not found only by introspection; it is often built through repeated commitment.
 
 The article should appear to be about the concrete topic, but the deeper learning should be the technical concept and mental model.
 
