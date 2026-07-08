@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getPublishedArticles, parseTags } from "@/lib/articles";
+import { getPublishedArticles, parseTags } from "@/features/blog/data";
 
 export default async function BlogPage() {
   const articles = await getPublishedArticles();

@@ -21,6 +21,15 @@ npm run db:migrate
 npm run article:generate
 ```
 
+## Project Structure
+
+- `src/app`: Next.js routes and page composition.
+- `src/features`: mini app domain modules, such as `src/features/blog`.
+- `src/lib`: shared infrastructure, such as the Prisma client.
+- `scripts`: scheduled or manual jobs.
+- `prompts`: versioned AI prompts.
+- `prisma`: database schema and migrations.
+
 ## Blog Flow
 
 1. `npm run article:generate` picks a topic from the calendar rotation.

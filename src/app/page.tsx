@@ -1,5 +1,9 @@
 import Link from "next/link";
-import { getLatestArticle, getPublishedArticles, parseTags } from "@/lib/articles";
+import {
+  getLatestArticle,
+  getPublishedArticles,
+  parseTags,
+} from "@/features/blog/data";
 
 const apps = [
   {

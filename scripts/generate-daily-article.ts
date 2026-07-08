@@ -4,7 +4,7 @@ import OpenAI from "openai";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
-import { sanitizeArticleBody } from "../src/lib/markdown";
+import { sanitizeArticleBody } from "../src/features/blog/markdown";
 
 const prisma = new PrismaClient();
 const DEFAULT_MODEL = "gpt-5.4-mini";

@@ -1,5 +1,5 @@
 import ReactMarkdown from "react-markdown";
-import { sanitizeArticleBody } from "@/lib/markdown";
+import { sanitizeArticleBody } from "@/features/blog/markdown";
 
 type ArticleBodyProps = {
   body: string;

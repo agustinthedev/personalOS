@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArticleBody } from "@/components/ArticleBody";
-import { getArticleBySlug, parseTags } from "@/lib/articles";
+import { ArticleBody } from "@/features/blog/components/ArticleBody";
+import { getArticleBySlug, parseTags } from "@/features/blog/data";
 
 type ArticlePageProps = {
   params: Promise<{ slug: string }>;
