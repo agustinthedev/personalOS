@@ -17,7 +17,7 @@ export function ArticleBody({ body, title }: ArticleBodyProps) {
             </h2>
           ),
           h3: ({ children }) => (
-            <h3 className="mb-4 mt-9 text-xl font-semibold leading-tight text-zinc-100">
+            <h3 className="mb-4 mt-9 text-xl font-semibold leading-tight text-cyan-50">
               {children}
             </h3>
           ),
@@ -41,7 +41,7 @@ export function ArticleBody({ body, title }: ArticleBodyProps) {
           ),
           li: ({ children }) => <li className="pl-1">{children}</li>,
           blockquote: ({ children }) => (
-            <blockquote className="my-6 border-l-2 border-orange-300/60 pl-5 text-zinc-300">
+            <blockquote className="my-6 rounded-[8px] border border-white/10 bg-white/[0.045] p-5 text-zinc-300">
               {children}
             </blockquote>
           ),

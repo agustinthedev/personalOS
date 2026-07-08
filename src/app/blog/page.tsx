@@ -10,13 +10,13 @@ export default async function BlogPage() {
         <div className="mx-auto max-w-7xl">
           <header className="mb-5 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <Link href="/" className="text-sm font-medium text-cyan-300">
+              <Link href="/" className="text-sm font-medium text-cyan-100">
                 Personal OS
               </Link>
-              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">
+              <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
                 Daily Blog
               </p>
-              <h1 className="mt-3 text-5xl font-semibold text-zinc-50 md:text-7xl">
+              <h1 className="liquid-text mt-3 text-5xl font-semibold md:text-7xl">
                 Morning readings
               </h1>
             </div>
@@ -34,12 +34,12 @@ export default async function BlogPage() {
                 <Link
                   key={article.id}
                   href={`/blog/${article.slug}`}
-                  className="panel group overflow-hidden rounded-[8px] transition hover:-translate-y-0.5 hover:border-orange-300/40"
+                  className="panel group overflow-hidden rounded-[8px] transition hover:-translate-y-0.5 hover:border-cyan-100/35"
                 >
                   <div className="grid gap-5 p-5 md:grid-cols-[minmax(0,1fr)_260px]">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded border border-orange-300/20 bg-orange-300/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-orange-200">
+                        <span className="rounded-[8px] border border-cyan-100/20 bg-cyan-100/10 px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-cyan-100">
                           Published
                         </span>
                         <span className="font-mono text-xs text-zinc-500">
@@ -55,7 +55,7 @@ export default async function BlogPage() {
                       </p>
                     </div>
 
-                    <div className="flex flex-col justify-between gap-5 border-t border-white/8 pt-5 md:border-l md:border-t-0 md:pl-5 md:pt-0">
+                    <div className="flex flex-col justify-between gap-5 border-t border-white/10 pt-5 md:border-l md:border-t-0 md:pl-5 md:pt-0">
                       <div className="flex flex-wrap gap-2 md:justify-end">
                         {parseTags(article.tags).map((tag) => (
                           <span
@@ -66,7 +66,7 @@ export default async function BlogPage() {
                           </span>
                         ))}
                       </div>
-                      <div className="h-20 rounded bg-gradient-to-t from-cyan-300/50 to-cyan-300/5 sparkline" />
+                      <div className="sparkline h-20 rounded-[8px] bg-gradient-to-t from-cyan-200/55 to-violet-200/5" />
                     </div>
                   </div>
                   <div className="glow-line h-1 opacity-60 transition group-hover:opacity-100" />

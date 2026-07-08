@@ -11,7 +11,7 @@ const apps = [
     href: "/blog",
     status: "Live",
     metric: "1/day",
-    accent: "from-rose-500 to-orange-400",
+    accent: "from-cyan-200 to-violet-300",
     description: "Generated morning readings built around one useful idea.",
   },
   {
@@ -19,7 +19,7 @@ const apps = [
     href: "/",
     status: "Core",
     metric: "Signals",
-    accent: "from-cyan-400 to-teal-300",
+    accent: "from-sky-200 to-cyan-300",
     description: "The command center that will collect signals from every mini app.",
   },
   {
@@ -27,7 +27,7 @@ const apps = [
     href: "/",
     status: "Queued",
     metric: "TBD",
-    accent: "from-violet-500 to-fuchsia-400",
+    accent: "from-fuchsia-200 to-blue-300",
     description: "Habits, finances, notes, health, or any module you want to add.",
   },
 ];
@@ -42,7 +42,7 @@ export default async function Home() {
 
   return (
     <main className="app-shell min-h-screen text-zinc-100">
-      <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[72px_1fr]">
+      <div className="relative z-10 grid min-h-screen grid-cols-1 lg:grid-cols-[96px_1fr]">
         <SideNav />
 
         <section className="soft-grid px-4 py-4 md:px-8 md:py-6">
@@ -58,10 +58,10 @@ export default async function Home() {
                     <Chip label="local-first" tone="violet" />
                   </div>
 
-                  <h1 className="mt-8 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-normal text-zinc-50 md:text-7xl">
+                  <h1 className="liquid-text mt-8 max-w-4xl text-5xl font-semibold leading-[0.98] tracking-normal md:text-7xl">
                     Personal systems, rendered as a command dashboard.
                   </h1>
-                  <p className="mt-5 max-w-2xl text-lg leading-8 text-zinc-400">
+                  <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300/82">
                     A dark operating surface for daily reading, personal signals,
                     automations, and the mini apps that will power your day.
                   </p>
@@ -89,12 +89,12 @@ export default async function Home() {
                       Content and app signals
                     </h2>
                   </div>
-                  <span className="rounded border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-xs font-medium text-emerald-300">
+                  <span className="rounded-[8px] border border-cyan-200/20 bg-cyan-200/10 px-3 py-1 text-xs font-medium text-cyan-100">
                     Healthy
                   </span>
                 </div>
 
-                <div className="bar-grid mt-7 flex h-56 items-end gap-3 rounded-[6px] border border-white/5 bg-black/20 px-5 pb-5">
+                <div className="bar-grid mt-7 flex h-56 items-end gap-3 rounded-[8px] border border-white/10 bg-white/[0.035] px-5 pb-5">
                   {activityBars.map((height, index) => (
                     <div
                       key={index}
@@ -102,10 +102,10 @@ export default async function Home() {
                       aria-hidden="true"
                     >
                       <div
-                        className="rounded-t bg-gradient-to-t from-orange-500 to-rose-400 shadow-[0_0_20px_rgba(244,114,182,0.25)]"
+                        className="rounded-t bg-gradient-to-t from-cyan-200 to-violet-300 shadow-[0_0_20px_rgba(125,211,252,0.22)]"
                         style={{ height: `${height}%` }}
                       />
-                      <div className="h-1 rounded bg-cyan-300/70" />
+                      <div className="h-1 rounded bg-white/50" />
                     </div>
                   ))}
                 </div>
@@ -116,7 +116,7 @@ export default async function Home() {
                   <Link
                     key={app.name}
                     href={app.href}
-                    className="panel group rounded-[8px] p-5 transition hover:-translate-y-0.5 hover:border-orange-300/40"
+                    className="panel group rounded-[8px] p-5 transition hover:-translate-y-0.5 hover:border-cyan-100/35"
                   >
                     <div className="flex items-center justify-between gap-4">
                       <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-500">
@@ -146,20 +146,20 @@ function TopBar() {
       <div className="flex items-center gap-2 text-sm text-zinc-400">
         <span className="text-zinc-600">Dashboard</span>
         <span>/</span>
-        <span className="rounded border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-cyan-200">
+        <span className="glass-button rounded-[8px] px-3 py-1 text-cyan-100">
           Personal OS
         </span>
       </div>
       <div className="flex flex-wrap gap-2">
-        <button className="h-9 rounded border border-white/10 bg-white/[0.04] px-3 text-sm text-zinc-300">
+        <button className="glass-button h-9 rounded-[8px] px-3 text-sm text-zinc-200">
           Last 24 hours
         </button>
-        <button className="h-9 rounded border border-white/10 bg-white/[0.04] px-3 text-sm text-zinc-300">
+        <button className="glass-button h-9 rounded-[8px] px-3 text-sm text-zinc-200">
           UTC -03
         </button>
         <Link
           href="/blog"
-          className="h-9 rounded bg-indigo-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-400"
+          className="h-9 rounded-[8px] bg-white px-4 py-2 text-sm font-semibold text-slate-950 shadow-[0_0_28px_rgba(140,236,255,0.22)] transition hover:bg-cyan-100"
         >
           Open Blog
         </Link>
@@ -170,19 +170,21 @@ function TopBar() {
 
 function SideNav() {
   return (
-    <aside className="hidden border-r border-white/8 bg-[#090a0d] lg:flex lg:flex-col lg:items-center lg:gap-4 lg:py-5">
-      <div className="flex h-9 w-9 items-center justify-center rounded bg-orange-500 text-sm font-black text-white">
+    <aside className="hidden lg:flex lg:items-start lg:justify-center lg:py-5">
+      <div className="panel sticky top-5 flex w-16 flex-col items-center gap-3 rounded-[8px] p-3">
+      <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-white text-sm font-black text-slate-950 shadow-[0_0_26px_rgba(140,236,255,0.24)]">
         OS
       </div>
       {["D", "B", "A", "S"].map((item) => (
         <div
           key={item}
-          className="flex h-9 w-9 items-center justify-center rounded border border-white/8 bg-white/[0.03] text-xs font-semibold text-zinc-500"
+          className="glass-button flex h-10 w-10 items-center justify-center rounded-[8px] text-xs font-semibold text-zinc-300"
         >
           {item}
         </div>
       ))}
-      <div className="mt-auto h-9 w-9 rounded border border-white/8 bg-white/[0.03]" />
+      <div className="mt-24 h-10 w-10 rounded-[8px] border border-white/10 bg-white/[0.04]" />
+      </div>
     </aside>
   );
 }
@@ -195,7 +197,7 @@ function TodayPanel({
   if (!latestArticle) {
     return (
       <aside className="panel-muted rounded-[8px] p-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
           Today&apos;s reading
         </p>
         <h2 className="mt-5 text-3xl font-semibold text-zinc-50">
@@ -211,7 +213,7 @@ function TodayPanel({
 
   return (
     <aside className="panel-muted rounded-[8px] p-5">
-      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-orange-300">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100">
         Today&apos;s reading
       </p>
       <h2 className="mt-5 text-3xl font-semibold leading-tight text-zinc-50">
@@ -230,7 +232,7 @@ function TodayPanel({
       </div>
       <Link
         href={`/blog/${latestArticle.slug}`}
-        className="mt-6 inline-flex h-10 items-center rounded bg-zinc-100 px-4 text-sm font-semibold text-zinc-950 transition hover:bg-orange-200"
+        className="mt-6 inline-flex h-10 items-center rounded-[8px] bg-white px-4 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100"
       >
         Read article
       </Link>
@@ -250,9 +252,9 @@ function MetricCard({
   tone: "cyan" | "orange" | "violet";
 }) {
   const tones = {
-    cyan: "from-cyan-300/80 to-cyan-300/5 text-cyan-300",
-    orange: "from-orange-400/80 to-orange-400/5 text-orange-300",
-    violet: "from-violet-400/80 to-violet-400/5 text-violet-300",
+    cyan: "from-cyan-200/70 to-cyan-200/5 text-cyan-100",
+    orange: "from-fuchsia-200/70 to-fuchsia-200/5 text-fuchsia-100",
+    violet: "from-violet-200/70 to-violet-200/5 text-violet-100",
   };
 
   return (
@@ -271,9 +273,9 @@ function MetricCard({
 
 function Chip({ label, tone }: { label: string; tone: "cyan" | "orange" | "violet" }) {
   const tones = {
-    cyan: "border-cyan-300/20 bg-cyan-300/10 text-cyan-200",
-    orange: "border-orange-300/20 bg-orange-300/10 text-orange-200",
-    violet: "border-violet-300/20 bg-violet-300/10 text-violet-200",
+    cyan: "border-cyan-100/20 bg-cyan-100/10 text-cyan-100",
+    orange: "border-fuchsia-100/20 bg-fuchsia-100/10 text-fuchsia-100",
+    violet: "border-violet-100/20 bg-violet-100/10 text-violet-100",
   };
 
   return (
