@@ -54,6 +54,7 @@ async function main() {
 
   await notifyTelegram({
     title: created.title,
+    subtitle: created.subtitle,
     url: articleUrl,
   });
 }
@@ -207,9 +208,11 @@ function buildArticleUrl(slug: string) {
 
 async function notifyTelegram({
   title,
+  subtitle,
   url,
 }: {
   title: string;
+  subtitle: string;
   url: string;
 }) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -234,6 +237,8 @@ async function notifyTelegram({
         "",
         `<b>${escapeHtml(title)}</b>`,
         "",
+        escapeHtml(subtitle),
+        "",
         escapeHtml(url),
       ].join("\n"),
       reply_markup: {
@@ -253,7 +258,7 @@ async function notifyTelegram({
     const details = await response.text();
     console.error(`Telegram notification failed: ${response.status} ${details}`);
     if (details.includes("BUTTON_URL_INVALID")) {
-      await notifyTelegramWithoutButton({ botToken, chatId, title, url });
+      await notifyTelegramWithoutButton({ botToken, chatId, title, subtitle, url });
     }
     return;
   }
@@ -265,11 +270,13 @@ async function notifyTelegramWithoutButton({
   botToken,
   chatId,
   title,
+  subtitle,
   url,
 }: {
   botToken: string;
   chatId: string;
   title: string;
+  subtitle: string;
   url: string;
 }) {
   const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
@@ -285,6 +292,8 @@ async function notifyTelegramWithoutButton({
         "📰 <b>New blog article available</b>",
         "",
         `<b>${escapeHtml(title)}</b>`,
+        "",
+        escapeHtml(subtitle),
         "",
         escapeHtml(url),
       ].join("\n"),
