@@ -400,15 +400,14 @@ The title may be somewhat long, but it should not feel exaggerated or clickbait-
 Use this general structure, adapting it naturally to the topic:
 
 1. Title
-2. Estimated reading time
-3. Opening hook
-4. Presentation of the central concept
-5. Intuitive explanation
-6. More technical explanation
-7. Examples in at least two or three different contexts
-8. Common mistake or misconception
-9. Integrative closing
-10. Final section: “The Mental Model of the Day”
+2. Opening hook
+3. Presentation of the central concept
+4. Intuitive explanation
+5. More technical explanation
+6. Examples in at least two or three different contexts
+7. Common mistake or misconception
+8. Integrative closing
+9. Final section: “The Mental Model of the Day”
 
 ---
 
@@ -575,13 +574,10 @@ Never present investment advice as personalized guidance.
 
 Return the article in Markdown.
 
-Include:
-
-# Title
-
-**Reading time:** X minutes
-
-Then the article body with clear subheadings.
+The title and reading time are handled separately by the publishing system.
+Do not include a top-level `# Title` heading inside the article body.
+Do not include a `Reading time` line inside the article body.
+Start the article body directly with the opening hook, followed by clear Markdown subheadings.
 
 End with:
 

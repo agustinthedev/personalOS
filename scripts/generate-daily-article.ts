@@ -4,6 +4,7 @@ import OpenAI from "openai";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
+import { sanitizeArticleBody } from "../src/lib/markdown";
 
 const prisma = new PrismaClient();
 const DEFAULT_MODEL = "gpt-5.4-mini";
@@ -24,8 +25,9 @@ async function main() {
   const article = process.env.OPENAI_API_KEY
     ? await generateWithOpenAI(context)
     : generateFallbackArticle(context.forcedTopic || "personal systems");
+  const body = sanitizeArticleBody(article.body, article.title);
 
-  const readingMinutes = estimateReadingMinutes(article.body);
+  const readingMinutes = estimateReadingMinutes(body);
   const slug = await uniqueSlug(slugify(article.title));
 
   const created = await prisma.article.create({
@@ -34,7 +36,7 @@ async function main() {
       title: article.title,
       subtitle: article.subtitle,
       summary: article.summary,
-      body: article.body,
+      body,
       topic: article.topic,
       tags: article.tags.join(", "),
       readingMinutes,
@@ -78,7 +80,7 @@ async function generateWithOpenAI(
           '  "topic": "Specific concrete topic",',
           '  "tags": ["tag-one", "tag-two", "tag-three"]',
           "}",
-          "The body must still include clear Markdown subheadings and must end with ## The Mental Model of the Day.",
+          "The body must not include a top-level # title or a reading-time line. The body must still include clear Markdown subheadings and must end with ## The Mental Model of the Day.",
         ].join("\n"),
       },
     ],

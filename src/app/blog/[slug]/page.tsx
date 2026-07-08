@@ -51,7 +51,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </header>
 
             <div className="px-5 py-8 md:px-10">
-              <ArticleBody body={article.body} />
+              <ArticleBody body={article.body} title={article.title} />
             </div>
           </div>
 
