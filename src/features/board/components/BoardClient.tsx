@@ -781,7 +781,7 @@ function TaskModal({
         {task ? (
           <section className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.015] p-3">
             <h3 className="font-semibold text-zinc-50">Comments</h3>
-            <div className="grid max-h-48 gap-2 overflow-auto pr-1">
+            <div className="glass-scrollbar grid max-h-48 gap-2 overflow-auto pr-1">
               {task.comments.length > 0 ? (
                 task.comments.map((item) => (
                   <div key={item.id} className="rounded-xl bg-black/14 p-3">
@@ -1363,7 +1363,7 @@ function ModalShell({
             Close
           </button>
         </header>
-        <div className="min-h-0 overflow-y-auto p-5">{children}</div>
+        <div className="glass-scrollbar min-h-0 overflow-y-auto p-5">{children}</div>
       </div>
     </div>
   );
