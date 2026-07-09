@@ -36,7 +36,7 @@ const columnSchema = z.object({
   countsAsCompleted: z.boolean(),
   cardColor: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/),
   cardOpacity: z.number().min(0).max(0.2),
-  wipLimit: z.number().int().min(1).max(500),
+  wipLimit: z.number().int().min(1).max(100),
 });
 
 const columnSettingsSchema = z.object({

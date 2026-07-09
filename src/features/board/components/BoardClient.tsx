@@ -41,7 +41,6 @@ import {
   KanbanPriority,
   KanbanSemantic,
   priorityOptions,
-  semanticOptions,
 } from "@/features/board/types";
 
 type ActiveModal =
@@ -59,6 +58,49 @@ const primaryButtonClass =
 
 const outlineButtonClass =
   "rounded-[28px] border border-white/12 bg-white/[0.012] text-sm font-semibold text-zinc-300 transition duration-150 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/[0.04] hover:text-zinc-50 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50 disabled:pointer-events-none disabled:opacity-40";
+
+const dangerIconButtonClass =
+  "rounded-[28px] border border-red-400/20 bg-red-500/[0.035] text-red-200 transition duration-150 hover:-translate-y-0.5 hover:border-red-300/45 hover:bg-red-500/[0.09] hover:text-red-100 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-200/60 disabled:pointer-events-none disabled:opacity-40";
+
+function SaveIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+      <path d="M17 21v-8H7v8" />
+      <path d="M7 3v5h8" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      viewBox="0 0 24 24"
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 14H6L5 6" />
+      <path d="M10 11v5" />
+      <path d="M14 11v5" />
+    </svg>
+  );
+}
 
 export function BoardClient({ initialData }: { initialData: BoardPageData }) {
   const router = useRouter();
@@ -832,6 +874,15 @@ function SettingsModal({
     );
   }
 
+  function toMaxItems(value: string) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      return 1;
+    }
+
+    return Math.min(100, Math.max(1, Math.trunc(parsed)));
+  }
+
   function saveColumns() {
     const orderedColumns = draftColumns.map((column, position) => ({
       ...column,
@@ -927,10 +978,12 @@ function SettingsModal({
           <button
             type="button"
             onClick={saveColumns}
+            aria-label="Save column settings"
+            title="Save changes"
             disabled={isPending || draftColumns.some((column) => !column.name.trim())}
-            className={`${primaryButtonClass} px-4 py-2`}
+            className={`${primaryButtonClass} flex h-10 w-10 items-center justify-center p-0`}
           >
-            Save changes
+            <SaveIcon />
           </button>
         </div>
 
@@ -939,7 +992,7 @@ function SettingsModal({
             key={column.id}
             className="rounded-2xl border border-white/10 bg-white/[0.015] p-3"
           >
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_132px_92px]">
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_120px]">
               <label className="grid gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
                   Name
@@ -950,23 +1003,17 @@ function SettingsModal({
                   className="h-10 min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none transition focus:border-white/45"
                 />
               </label>
-              <SelectField
-                label="Type"
-                value={column.semanticType}
-                onChange={(value) =>
-                  updateDraft(column.id, { semanticType: value as KanbanSemantic })
-                }
-                options={semanticOptions}
-              />
               <label className="grid gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-                  WIP
+                  Max items
                 </span>
                 <input
                   type="number"
+                  min="1"
+                  max="100"
                   value={column.wipLimit}
                   onChange={(event) =>
-                    updateDraft(column.id, { wipLimit: Number(event.target.value) })
+                    updateDraft(column.id, { wipLimit: toMaxItems(event.target.value) })
                   }
                   className="h-10 min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none transition focus:border-white/45"
                 />
@@ -1041,10 +1088,12 @@ function SettingsModal({
                 <button
                   type="button"
                   onClick={() => removeColumn(column)}
+                  aria-label={`Delete ${column.name}`}
+                  title="Delete"
                   disabled={isPending || draftColumns.length <= 1}
-                  className={`${outlineButtonClass} px-3 py-1`}
+                  className={`${dangerIconButtonClass} flex h-8 w-8 items-center justify-center p-0`}
                 >
-                  Delete
+                  <TrashIcon />
                 </button>
               </div>
             </div>
@@ -1053,29 +1102,27 @@ function SettingsModal({
 
         <section className="rounded-2xl border border-dashed border-white/14 bg-white/[0.01] p-3 xl:col-span-2">
           <h3 className="font-semibold text-zinc-50">New column</h3>
-          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_82px_auto_auto] sm:items-center">
+          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_110px_82px_auto_auto] sm:items-center">
             <input
               value={newColumn.name}
               onChange={(event) => setNewColumn({ ...newColumn, name: event.target.value })}
               placeholder="Name"
               className="h-10 min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 text-zinc-50 outline-none transition focus:border-white/45"
             />
-            <select
-              value={newColumn.semanticType}
+            <input
+              type="number"
+              min="1"
+              max="100"
+              aria-label="New column max items"
+              value={newColumn.wipLimit}
               onChange={(event) =>
                 setNewColumn({
                   ...newColumn,
-                  semanticType: event.target.value as KanbanSemantic,
+                  wipLimit: toMaxItems(event.target.value),
                 })
               }
-              className="h-10 min-w-0 rounded-xl border border-white/10 bg-zinc-950 px-3 text-zinc-50 outline-none transition focus:border-white/45"
-            >
-              {semanticOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+              className="h-10 min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 text-zinc-50 outline-none transition focus:border-white/45"
+            />
             <input
               type="color"
               value={newColumn.cardColor}
