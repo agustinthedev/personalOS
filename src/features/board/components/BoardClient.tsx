@@ -51,16 +51,19 @@ type ActiveModal =
   | null;
 
 const subtleButtonClass =
-  "glass-button rounded-[28px] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/[0.055] active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60 disabled:pointer-events-none disabled:opacity-45";
+  "glass-button cursor-pointer rounded-[28px] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/[0.055] active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45";
 
 const primaryButtonClass =
-  "rounded-[28px] bg-white text-sm font-semibold text-zinc-950 shadow-[0_0_24px_rgba(255,255,255,0.14)] transition duration-150 hover:-translate-y-0.5 hover:bg-zinc-100 hover:shadow-[0_0_34px_rgba(255,255,255,0.2)] active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60 disabled:pointer-events-none disabled:opacity-60";
+  "cursor-pointer rounded-[28px] bg-white text-sm font-semibold text-zinc-950 shadow-[0_0_24px_rgba(255,255,255,0.14)] transition duration-150 hover:-translate-y-0.5 hover:bg-zinc-100 hover:shadow-[0_0_34px_rgba(255,255,255,0.2)] active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-60";
 
 const outlineButtonClass =
-  "rounded-[28px] border border-white/12 bg-white/[0.012] text-sm font-semibold text-zinc-300 transition duration-150 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/[0.04] hover:text-zinc-50 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50 disabled:pointer-events-none disabled:opacity-40";
+  "cursor-pointer rounded-[28px] border border-white/12 bg-white/[0.012] text-sm font-semibold text-zinc-300 transition duration-150 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/[0.04] hover:text-zinc-50 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40";
 
 const dangerIconButtonClass =
-  "rounded-[28px] border border-red-400/20 bg-red-500/[0.035] text-red-200 transition duration-150 hover:-translate-y-0.5 hover:border-red-300/45 hover:bg-red-500/[0.09] hover:text-red-100 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-200/60 disabled:pointer-events-none disabled:opacity-40";
+  "cursor-pointer rounded-[28px] border border-red-400/20 bg-red-500/[0.035] text-red-200 transition duration-150 hover:-translate-y-0.5 hover:border-red-300/45 hover:bg-red-500/[0.09] hover:text-red-100 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-200/60 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40";
+
+const dangerTextButtonClass =
+  "cursor-pointer rounded-[28px] border border-red-400/24 bg-red-500/[0.045] text-sm font-semibold text-red-200 transition duration-150 hover:-translate-y-0.5 hover:border-red-300/50 hover:bg-red-500/[0.1] hover:text-red-100 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-200/60 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45";
 
 function SaveIcon() {
   return (
@@ -393,7 +396,7 @@ function BoardColumnView({
       <button
         type="button"
         onClick={onAddTask}
-        className="mt-4 h-10 w-full rounded-[28px] border border-dashed border-white/18 bg-white/[0.015] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/[0.045] active:translate-y-0 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+        className="mt-4 h-10 w-full cursor-pointer rounded-[28px] border border-dashed border-white/18 bg-white/[0.015] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/[0.045] active:translate-y-0 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
       >
         New task
       </button>
@@ -438,7 +441,7 @@ function StaticBoardColumnView({
       <button
         type="button"
         onClick={onAddTask}
-        className="mt-4 h-10 w-full rounded-[28px] border border-dashed border-white/18 bg-white/[0.015] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/[0.045] active:translate-y-0 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+        className="mt-4 h-10 w-full cursor-pointer rounded-[28px] border border-dashed border-white/18 bg-white/[0.015] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/[0.045] active:translate-y-0 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
       >
         New task
       </button>
@@ -480,7 +483,7 @@ function SortableTaskCard({
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full rounded-[14px] text-left transition active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+        className="block w-full cursor-pointer rounded-[14px] text-left transition active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
         {...attributes}
         {...listeners}
       >
@@ -511,7 +514,7 @@ function StaticTaskCard({
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full rounded-[14px] text-left transition active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+        className="block w-full cursor-pointer rounded-[14px] text-left transition active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
       >
         <TaskCardContent task={task} completedChecklist={completedChecklist} />
       </button>
@@ -816,7 +819,7 @@ function TaskModal({
               type="button"
               onClick={archiveCurrentTask}
               disabled={isPending}
-              className={`${outlineButtonClass} px-4 py-2`}
+              className={`${dangerTextButtonClass} px-4 py-2`}
             >
               Archive
             </button>
