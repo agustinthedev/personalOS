@@ -39,6 +39,11 @@ const columnSchema = z.object({
   wipLimit: z.number().int().min(1).max(500),
 });
 
+const columnSettingsSchema = z.object({
+  boardId: z.string().min(1),
+  columns: z.array(columnSchema.extend({ columnId: z.string().min(1) })),
+});
+
 const categorySchema = z.object({
   boardId: z.string().min(1),
   categoryId: z.string().optional(),
@@ -413,7 +418,7 @@ export async function createColumn(input: z.input<typeof columnSchema>) {
     where: { boardId: data.boardId },
   });
 
-  await prisma.kanbanColumn.create({
+  const column = await prisma.kanbanColumn.create({
     data: {
       boardId: data.boardId,
       name: data.name,
@@ -427,6 +432,17 @@ export async function createColumn(input: z.input<typeof columnSchema>) {
   });
 
   revalidatePath(boardPath);
+
+  return {
+    id: column.id,
+    name: column.name,
+    position: column.position,
+    semanticType: column.semanticType,
+    countsAsCompleted: column.countsAsCompleted,
+    cardColor: column.cardColor,
+    cardOpacity: column.cardOpacity,
+    wipLimit: column.wipLimit,
+  };
 }
 
 export async function updateColumn(input: z.input<typeof columnSchema>) {
@@ -476,6 +492,74 @@ export async function updateColumn(input: z.input<typeof columnSchema>) {
             metadata: JSON.stringify({ reason: "column_completion_setting_changed" }),
           },
         });
+      }
+    }
+  });
+
+  revalidatePath(boardPath);
+}
+
+export async function updateColumnSettings(
+  input: z.input<typeof columnSettingsSchema>,
+) {
+  const data = columnSettingsSchema.parse(input);
+  const now = new Date();
+
+  await prisma.$transaction(async (tx) => {
+    const currentColumns = await tx.kanbanColumn.findMany({
+      where: {
+        boardId: data.boardId,
+        id: { in: data.columns.map((column) => column.columnId) },
+      },
+    });
+    const currentById = new Map(currentColumns.map((column) => [column.id, column]));
+
+    for (const [position, column] of data.columns.entries()) {
+      const current = currentById.get(column.columnId);
+      if (!current) {
+        continue;
+      }
+
+      await tx.kanbanColumn.update({
+        where: { id: column.columnId },
+        data: {
+          name: column.name,
+          position,
+          semanticType: column.semanticType,
+          countsAsCompleted: column.countsAsCompleted,
+          cardColor: column.cardColor,
+          cardOpacity: column.cardOpacity,
+          wipLimit: column.wipLimit,
+        },
+      });
+
+      if (current.countsAsCompleted !== column.countsAsCompleted) {
+        const tasks = await tx.kanbanTask.findMany({
+          where: {
+            columnId: column.columnId,
+            archivedAt: null,
+          },
+        });
+
+        for (const task of tasks) {
+          await tx.kanbanTask.update({
+            where: { id: task.id },
+            data: {
+              completedAt: column.countsAsCompleted ? task.completedAt ?? now : null,
+            },
+          });
+
+          await tx.kanbanTaskEvent.create({
+            data: {
+              taskId: task.id,
+              boardId: data.boardId,
+              type: column.countsAsCompleted ? "COMPLETED" : "REOPENED",
+              fromColumnId: column.columnId,
+              toColumnId: column.columnId,
+              metadata: JSON.stringify({ reason: "column_settings_saved" }),
+            },
+          });
+        }
       }
     }
   });

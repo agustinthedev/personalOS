@@ -4,7 +4,6 @@ import { getBoardPageData } from "@/features/board/data";
 
 export default async function BoardPage() {
   const data = await getBoardPageData();
-  const boardStateKey = JSON.stringify(data);
 
   return (
     <main className="app-shell min-h-screen text-zinc-50">
@@ -30,7 +29,7 @@ export default async function BoardPage() {
             </div>
           </header>
 
-          <BoardClient key={boardStateKey} initialData={data} />
+          <BoardClient initialData={data} />
         </div>
       </section>
     </main>

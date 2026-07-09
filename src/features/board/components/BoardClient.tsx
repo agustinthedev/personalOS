@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   closestCorners,
@@ -26,11 +26,10 @@ import {
   createColumn,
   createTask,
   deleteColumn,
-  reorderColumns,
   reorderTasks,
   restoreTask,
   updateCategory,
-  updateColumn,
+  updateColumnSettings,
   updateTask,
 } from "@/features/board/actions";
 import {
@@ -64,6 +63,11 @@ const outlineButtonClass =
 export function BoardClient({ initialData }: { initialData: BoardPageData }) {
   const router = useRouter();
   const [data, setData] = useState(initialData);
+  const isHydrated = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
   const [isPending, startTransition] = useTransition();
   const sensors = useSensors(
@@ -75,12 +79,28 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
     }),
   );
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setData(initialData);
+  }, [initialData]);
+
   function refresh() {
     router.refresh();
   }
 
   function closeModal() {
     setActiveModal(null);
+  }
+
+  function applyColumnSettings(columns: BoardColumn[]) {
+    const orderedColumns = columns
+      .map((column, position) => ({ ...column, position }))
+      .sort((a, b) => a.position - b.position);
+
+    setData((current) => ({
+      ...current,
+      columns: orderedColumns,
+    }));
   }
 
   function findTaskLocation(taskId: string, columns = data.columns) {
@@ -202,14 +222,29 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
         ) : null}
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragEnd={handleDragEnd}
-      >
+      {isHydrated ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragEnd={handleDragEnd}
+        >
+          <div className="grid gap-4 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
+            {data.columns.map((column) => (
+              <BoardColumnView
+                key={column.id}
+                column={column}
+                onAddTask={() => setActiveModal({ type: "task", columnId: column.id })}
+                onOpenTask={(task) =>
+                  setActiveModal({ type: "task", columnId: column.id, task })
+                }
+              />
+            ))}
+          </div>
+        </DndContext>
+      ) : (
         <div className="grid gap-4 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
           {data.columns.map((column) => (
-            <BoardColumnView
+            <StaticBoardColumnView
               key={column.id}
               column={column}
               onAddTask={() => setActiveModal({ type: "task", columnId: column.id })}
@@ -219,7 +254,7 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
             />
           ))}
         </div>
-      </DndContext>
+      )}
 
       {activeModal?.type === "task" ? (
         <TaskModal
@@ -238,7 +273,7 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
           boardId={data.board.id}
           columns={data.columns}
           onClose={closeModal}
-          onSaved={refresh}
+          onSaved={applyColumnSettings}
         />
       ) : null}
 
@@ -261,6 +296,10 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
 
     </>
   );
+}
+
+function emptySubscribe() {
+  return () => {};
 }
 
 function BoardColumnView({
@@ -320,6 +359,51 @@ function BoardColumnView({
   );
 }
 
+function StaticBoardColumnView({
+  column,
+  onAddTask,
+  onOpenTask,
+}: {
+  column: BoardColumn;
+  onAddTask: () => void;
+  onOpenTask: (task: BoardTask) => void;
+}) {
+  return (
+    <section className="panel min-h-[280px] rounded-[28px] p-4 transition">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
+            {column.countsAsCompleted ? "Completed" : column.semanticType.toLowerCase()}
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold text-zinc-50">{column.name}</h2>
+        </div>
+        <span className="rounded-full border border-white/10 bg-white/[0.025] px-2 py-1 font-mono text-xs text-zinc-300">
+          {column.tasks.length}/{column.wipLimit}
+        </span>
+      </div>
+
+      <div className="mt-4 grid gap-3">
+        {column.tasks.map((task) => (
+          <StaticTaskCard
+            key={task.id}
+            task={task}
+            column={column}
+            onOpen={() => onOpenTask(task)}
+          />
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={onAddTask}
+        className="mt-4 h-10 w-full rounded-[28px] border border-dashed border-white/18 bg-white/[0.015] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/[0.045] active:translate-y-0 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+      >
+        New task
+      </button>
+    </section>
+  );
+}
+
 function SortableTaskCard({
   task,
   column,
@@ -358,43 +442,86 @@ function SortableTaskCard({
         {...attributes}
         {...listeners}
       >
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="min-w-0 text-base font-semibold leading-6 text-zinc-50">
-            {task.title}
-          </h3>
-          <span className="shrink-0 rounded-full border border-white/12 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-200">
-            {priorityLabel(task.priority)}
-          </span>
-        </div>
-
-        {task.description ? (
-          <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-300">
-            {task.description}
-          </p>
-        ) : null}
-
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          {task.category ? (
-            <span
-              className="rounded-full px-2 py-1 text-xs font-semibold text-zinc-950"
-              style={{ backgroundColor: task.category.color }}
-            >
-              {task.category.name}
-            </span>
-          ) : null}
-          {task.dueDate ? (
-            <span className="rounded-full border border-white/10 bg-white/[0.025] px-2 py-1 font-mono text-xs text-zinc-300">
-              {formatDate(task.dueDate)}
-            </span>
-          ) : null}
-          {task.checklistItems.length > 0 ? (
-            <span className="rounded-full border border-white/10 bg-white/[0.025] px-2 py-1 font-mono text-xs text-zinc-300">
-              {completedChecklist}/{task.checklistItems.length}
-            </span>
-          ) : null}
-        </div>
+        <TaskCardContent task={task} completedChecklist={completedChecklist} />
       </button>
     </article>
+  );
+}
+
+function StaticTaskCard({
+  task,
+  column,
+  onOpen,
+}: {
+  task: BoardTask;
+  column: BoardColumn;
+  onOpen: () => void;
+}) {
+  const completedChecklist = task.checklistItems.filter((item) => item.completed).length;
+
+  return (
+    <article
+      style={{
+        backgroundColor: hexToRgba(column.cardColor, column.cardOpacity),
+      }}
+      className="rounded-[18px] border border-white/12 p-3 shadow-[0_14px_34px_rgba(0,0,0,0.22)] transition hover:border-white/32"
+    >
+      <button
+        type="button"
+        onClick={onOpen}
+        className="block w-full rounded-[14px] text-left transition active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+      >
+        <TaskCardContent task={task} completedChecklist={completedChecklist} />
+      </button>
+    </article>
+  );
+}
+
+function TaskCardContent({
+  task,
+  completedChecklist,
+}: {
+  task: BoardTask;
+  completedChecklist: number;
+}) {
+  return (
+    <>
+      <div className="flex items-start justify-between gap-3">
+        <h3 className="min-w-0 text-base font-semibold leading-6 text-zinc-50">
+          {task.title}
+        </h3>
+        <span className="shrink-0 rounded-full border border-white/12 bg-black/20 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-zinc-200">
+          {priorityLabel(task.priority)}
+        </span>
+      </div>
+
+      {task.description ? (
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-300">
+          {task.description}
+        </p>
+      ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {task.category ? (
+          <span
+            className="rounded-full px-2 py-1 text-xs font-semibold text-zinc-950"
+            style={{ backgroundColor: task.category.color }}
+          >
+            {task.category.name}
+          </span>
+        ) : null}
+        {task.dueDate ? (
+          <span className="rounded-full border border-white/10 bg-white/[0.025] px-2 py-1 font-mono text-xs text-zinc-300">
+            {formatDate(task.dueDate)}
+          </span>
+        ) : null}
+        {task.checklistItems.length > 0 ? (
+          <span className="rounded-full border border-white/10 bg-white/[0.025] px-2 py-1 font-mono text-xs text-zinc-300">
+            {completedChecklist}/{task.checklistItems.length}
+          </span>
+        ) : null}
+      </div>
+    </>
   );
 }
 
@@ -686,7 +813,7 @@ function SettingsModal({
   boardId: string;
   columns: BoardColumn[];
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (columns: BoardColumn[]) => void;
 }) {
   const [draftColumns, setDraftColumns] = useState(columns);
   const [newColumn, setNewColumn] = useState({
@@ -705,19 +832,28 @@ function SettingsModal({
     );
   }
 
-  function saveColumn(column: BoardColumn) {
+  function saveColumns() {
+    const orderedColumns = draftColumns.map((column, position) => ({
+      ...column,
+      position,
+    }));
+
     startTransition(async () => {
-      await updateColumn({
+      await updateColumnSettings({
         boardId,
-        columnId: column.id,
-        name: column.name,
-        semanticType: column.semanticType,
-        countsAsCompleted: column.countsAsCompleted,
-        cardColor: column.cardColor,
-        cardOpacity: Number(column.cardOpacity),
-        wipLimit: Number(column.wipLimit),
+        columns: orderedColumns.map((column) => ({
+          boardId,
+          columnId: column.id,
+          name: column.name,
+          semanticType: column.semanticType,
+          countsAsCompleted: column.countsAsCompleted,
+          cardColor: column.cardColor,
+          cardOpacity: Number(column.cardOpacity),
+          wipLimit: Number(column.wipLimit),
+        })),
       });
-      onSaved();
+      setDraftColumns(orderedColumns);
+      onSaved(orderedColumns);
     });
   }
 
@@ -732,16 +868,11 @@ function SettingsModal({
     const [item] = next.splice(index, 1);
     next.splice(target, 0, item);
     setDraftColumns(next);
-
-    startTransition(async () => {
-      await reorderColumns({ boardId, columnIds: next.map((column) => column.id) });
-      onSaved();
-    });
   }
 
   function addColumn() {
     startTransition(async () => {
-      await createColumn({
+      const createdColumn = await createColumn({
         boardId,
         name: newColumn.name,
         semanticType: newColumn.semanticType,
@@ -758,7 +889,16 @@ function SettingsModal({
         cardOpacity: 0.03,
         wipLimit: 100,
       });
-      onSaved();
+      const nextColumns = [
+        ...draftColumns,
+        {
+          ...createdColumn,
+          semanticType: createdColumn.semanticType as KanbanSemantic,
+          tasks: [],
+        },
+      ];
+      setDraftColumns(nextColumns);
+      onSaved(nextColumns);
     });
   }
 
@@ -774,13 +914,26 @@ function SettingsModal({
 
     startTransition(async () => {
       await deleteColumn(column.id);
-      onSaved();
+      const nextColumns = draftColumns.filter((item) => item.id !== column.id);
+      setDraftColumns(nextColumns);
+      onSaved(nextColumns);
     });
   }
 
   return (
     <ModalShell title="Column settings" onClose={onClose} wide>
       <div className="grid gap-3 xl:grid-cols-2">
+        <div className="flex flex-wrap items-center justify-end gap-2 xl:col-span-2">
+          <button
+            type="button"
+            onClick={saveColumns}
+            disabled={isPending || draftColumns.some((column) => !column.name.trim())}
+            className={`${primaryButtonClass} px-4 py-2`}
+          >
+            Save changes
+          </button>
+        </div>
+
         {draftColumns.map((column, index) => (
           <section
             key={column.id}
@@ -866,18 +1019,22 @@ function SettingsModal({
                 <button
                   type="button"
                   onClick={() => moveColumn(column.id, -1)}
+                  aria-label={`Move ${column.name} up`}
+                  title="Move up"
                   disabled={index === 0 || isPending}
-                  className={`${outlineButtonClass} px-3 py-1`}
+                  className={`${outlineButtonClass} flex h-8 w-8 items-center justify-center p-0 text-base`}
                 >
-                  Up
+                  <span className="h-0 w-0 border-x-[5px] border-b-[7px] border-x-transparent border-b-current" />
                 </button>
                 <button
                   type="button"
                   onClick={() => moveColumn(column.id, 1)}
+                  aria-label={`Move ${column.name} down`}
+                  title="Move down"
                   disabled={index === draftColumns.length - 1 || isPending}
-                  className={`${outlineButtonClass} px-3 py-1`}
+                  className={`${outlineButtonClass} flex h-8 w-8 items-center justify-center p-0 text-base`}
                 >
-                  Down
+                  <span className="h-0 w-0 border-x-[5px] border-t-[7px] border-x-transparent border-t-current" />
                 </button>
               </div>
               <div className="flex gap-2">
@@ -888,14 +1045,6 @@ function SettingsModal({
                   className={`${outlineButtonClass} px-3 py-1`}
                 >
                   Delete
-                </button>
-                <button
-                  type="button"
-                  onClick={() => saveColumn(column)}
-                  disabled={isPending || !column.name.trim()}
-                  className={`${primaryButtonClass} px-3 py-1`}
-                >
-                  Save
                 </button>
               </div>
             </div>
