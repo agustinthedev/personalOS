@@ -13,8 +13,8 @@ datasource db {
 }
 
 model Article {
-  id             String        @id @default(cuid())
-  slug           String        @unique
+  id             String    @id @default(cuid())
+  slug           String    @unique
   title          String
   subtitle       String
   summary        String
@@ -22,12 +22,154 @@ model Article {
   topic          String
   tags           String
   readingMinutes Int
-  status         String        @default("DRAFT")
+  status         String    @default("DRAFT")
   generatedBy    String
   publishedAt    DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   @@index([status, publishedAt])
   @@index([topic])
+}
+
+model KanbanBoard {
+  id         String            @id @default(cuid())
+  name       String
+  isDefault  Boolean           @default(false)
+  columns    KanbanColumn[]
+  categories KanbanCategory[]
+  tasks      KanbanTask[]
+  events     KanbanTaskEvent[]
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  @@index([isDefault])
+}
+
+model KanbanColumn {
+  id                String               @id @default(cuid())
+  boardId           String
+  board             KanbanBoard          @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name              String
+  position          Int
+  semanticType      KanbanColumnSemantic @default(CUSTOM)
+  countsAsCompleted Boolean              @default(false)
+  cardColor         String               @default("#ffffff")
+  cardOpacity       Float                @default(0.03)
+  wipLimit          Int                  @default(100)
+  tasks             KanbanTask[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([boardId, position])
+}
+
+model KanbanCategory {
+  id        String       @id @default(cuid())
+  boardId   String
+  board     KanbanBoard  @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name      String
+  color     String       @default("#94a3b8")
+  isDefault Boolean      @default(false)
+  tasks     KanbanTask[]
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([boardId, name])
+}
+
+model KanbanTask {
+  id              String                @id @default(cuid())
+  boardId         String
+  board           KanbanBoard           @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  columnId        String?
+  column          KanbanColumn?         @relation(fields: [columnId], references: [id], onDelete: SetNull)
+  categoryId      String?
+  category        KanbanCategory?       @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  title           String
+  description     String?
+  priority        KanbanTaskPriority    @default(MEDIUM)
+  dueDate         DateTime?
+  position        Int
+  archivedAt      DateTime?
+  columnChangedAt DateTime              @default(now())
+  completedAt     DateTime?
+  checklistItems  KanbanChecklistItem[]
+  comments        KanbanTaskComment[]
+  events          KanbanTaskEvent[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+
+  @@index([boardId, archivedAt])
+  @@index([boardId, completedAt])
+  @@index([columnId, position])
+  @@index([categoryId])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+model KanbanChecklistItem {
+  id        String     @id @default(cuid())
+  taskId    String
+  task      KanbanTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  text      String
+  completed Boolean    @default(false)
+  position  Int
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([taskId, position])
+}
+
+model KanbanTaskComment {
+  id        String     @id @default(cuid())
+  taskId    String
+  task      KanbanTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([taskId, createdAt])
+}
+
+model KanbanTaskEvent {
+  id           String          @id @default(cuid())
+  taskId       String?
+  task         KanbanTask?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  boardId      String
+  board        KanbanBoard     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  type         KanbanEventType
+  fromColumnId String?
+  toColumnId   String?
+  metadata     String?
+  createdAt    DateTime        @default(now())
+
+  @@index([boardId, createdAt])
+  @@index([taskId, createdAt])
+  @@index([type, createdAt])
+}
+
+enum KanbanColumnSemantic {
+  TODO
+  ACTIVE
+  DONE
+  CUSTOM
+}
+
+enum KanbanTaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum KanbanEventType {
+  CREATED
+  UPDATED
+  MOVED
+  COMPLETED
+  REOPENED
+  ARCHIVED
+  RESTORED
+  COMMENTED
+  CHECKLIST_UPDATED
 }

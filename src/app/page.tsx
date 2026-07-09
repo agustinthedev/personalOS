@@ -23,12 +23,12 @@ const apps = [
     description: "The command center that will collect signals from every mini app.",
   },
   {
-    name: "Next app",
-    href: "/",
-    status: "Queued",
-    metric: "TBD",
-    accent: "from-white/65 to-zinc-600/35",
-    description: "Habits, finances, notes, health, or any module you want to add.",
+    name: "Board",
+    href: "/board",
+    status: "Live",
+    metric: "Kanban",
+    accent: "from-sky-200/65 to-emerald-300/35",
+    description: "A personal task board with columns, categories, checklists, and comments.",
   },
 ];
 
@@ -164,6 +164,12 @@ function TopBar() {
           className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-[0_0_28px_rgba(255,255,255,0.16)] transition hover:bg-zinc-100"
         >
           Open Blog
+        </a>
+        <a
+          href="/board"
+          className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-[0_0_28px_rgba(255,255,255,0.16)] transition hover:bg-zinc-100"
+        >
+          Open Board
         </a>
       </div>
     </div>
