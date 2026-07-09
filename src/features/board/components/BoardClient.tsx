@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   closestCorners,
@@ -52,6 +52,15 @@ type ActiveModal =
   | { type: "archived" }
   | null;
 
+const subtleButtonClass =
+  "glass-button rounded-[28px] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/50 hover:bg-white/[0.055] active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60 disabled:pointer-events-none disabled:opacity-45";
+
+const primaryButtonClass =
+  "rounded-[28px] bg-white text-sm font-semibold text-zinc-950 shadow-[0_0_24px_rgba(255,255,255,0.14)] transition duration-150 hover:-translate-y-0.5 hover:bg-zinc-100 hover:shadow-[0_0_34px_rgba(255,255,255,0.2)] active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/60 disabled:pointer-events-none disabled:opacity-60";
+
+const outlineButtonClass =
+  "rounded-[28px] border border-white/12 bg-white/[0.012] text-sm font-semibold text-zinc-300 transition duration-150 hover:-translate-y-0.5 hover:border-white/40 hover:bg-white/[0.04] hover:text-zinc-50 active:translate-y-0 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50 disabled:pointer-events-none disabled:opacity-40";
+
 export function BoardClient({ initialData }: { initialData: BoardPageData }) {
   const router = useRouter();
   const [data, setData] = useState(initialData);
@@ -64,11 +73,6 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     }),
-  );
-
-  const allTasks = useMemo(
-    () => data.columns.flatMap((column) => column.tasks),
-    [data.columns],
   );
 
   function refresh() {
@@ -174,23 +178,23 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
           <button
             type="button"
             onClick={() => setActiveModal({ type: "settings" })}
-            className="glass-button h-9 rounded-[28px] px-3 text-sm font-medium text-zinc-200 transition hover:border-white/45"
+            className={`${subtleButtonClass} h-9 px-3`}
           >
-            Ajustes
+            Settings
           </button>
           <button
             type="button"
             onClick={() => setActiveModal({ type: "categories" })}
-            className="glass-button h-9 rounded-[28px] px-3 text-sm font-medium text-zinc-200 transition hover:border-white/45"
+            className={`${subtleButtonClass} h-9 px-3`}
           >
-            Categorias
+            Categories
           </button>
           <button
             type="button"
             onClick={() => setActiveModal({ type: "archived" })}
-            className="glass-button h-9 rounded-[28px] px-3 text-sm font-medium text-zinc-200 transition hover:border-white/45"
+            className={`${subtleButtonClass} h-9 px-3`}
           >
-            Archivadas
+            Archived
           </button>
         </div>
         {isPending ? (
@@ -255,15 +259,6 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
         />
       ) : null}
 
-      {allTasks.length === 0 ? (
-        <div className="panel mt-4 rounded-[28px] p-6 text-zinc-300">
-          <h2 className="text-2xl font-semibold text-zinc-50">Board listo.</h2>
-          <p className="mt-3 leading-7">
-            Crea la primera tarea desde cualquiera de las columnas para empezar a
-            mover trabajo por el sistema.
-          </p>
-        </div>
-      ) : null}
     </>
   );
 }
@@ -317,9 +312,9 @@ function BoardColumnView({
       <button
         type="button"
         onClick={onAddTask}
-        className="mt-4 h-10 w-full rounded-[28px] border border-dashed border-white/18 bg-white/[0.015] text-sm font-semibold text-zinc-200 transition hover:border-white/45 hover:bg-white/[0.03]"
+        className="mt-4 h-10 w-full rounded-[28px] border border-dashed border-white/18 bg-white/[0.015] text-sm font-semibold text-zinc-200 transition duration-150 hover:-translate-y-0.5 hover:border-white/45 hover:bg-white/[0.045] active:translate-y-0 active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
       >
-        Nueva tarea
+        New task
       </button>
     </section>
   );
@@ -359,7 +354,7 @@ function SortableTaskCard({
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full text-left"
+        className="block w-full rounded-[14px] text-left transition active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
         {...attributes}
         {...listeners}
       >
@@ -512,11 +507,11 @@ function TaskModal({
   }
 
   return (
-    <ModalShell title={task ? "Editar tarea" : "Nueva tarea"} onClose={onClose}>
+    <ModalShell title={task ? "Edit task" : "New task"} onClose={onClose}>
       <div className="grid gap-4">
         <label className="grid gap-2">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-            Titulo
+            Title
           </span>
           <input
             value={title}
@@ -527,7 +522,7 @@ function TaskModal({
 
         <label className="grid gap-2">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-            Descripcion
+            Description
           </span>
           <textarea
             value={description}
@@ -539,13 +534,13 @@ function TaskModal({
 
         <div className="grid gap-3 md:grid-cols-2">
           <SelectField
-            label="Columna"
+            label="Column"
             value={selectedColumnId}
             onChange={setSelectedColumnId}
             options={columns.map((column) => ({ value: column.id, label: column.name }))}
           />
           <SelectField
-            label="Categoria"
+            label="Category"
             value={categoryId}
             onChange={setCategoryId}
             options={categories.map((category) => ({
@@ -554,7 +549,7 @@ function TaskModal({
             }))}
           />
           <SelectField
-            label="Prioridad"
+            label="Priority"
             value={priority}
             onChange={(value) => setPriority(value as KanbanPriority)}
             options={priorityOptions}
@@ -578,9 +573,9 @@ function TaskModal({
             <button
               type="button"
               onClick={addChecklistItem}
-              className="rounded-full border border-white/14 px-3 py-1 text-sm text-zinc-200"
+              className={`${outlineButtonClass} px-3 py-1`}
             >
-              Agregar
+              Add
             </button>
           </div>
           {checklist.map((item) => (
@@ -603,9 +598,9 @@ function TaskModal({
               <button
                 type="button"
                 onClick={() => removeChecklistItem(item.id)}
-                className="rounded-full border border-white/12 px-2 py-1 text-xs text-zinc-300"
+                className={`${outlineButtonClass} px-2 py-1 text-xs`}
               >
-                Quitar
+                Remove
               </button>
             </div>
           ))}
@@ -613,7 +608,7 @@ function TaskModal({
 
         {task ? (
           <section className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.015] p-3">
-            <h3 className="font-semibold text-zinc-50">Comentarios</h3>
+            <h3 className="font-semibold text-zinc-50">Comments</h3>
             <div className="grid max-h-48 gap-2 overflow-auto pr-1">
               {task.comments.length > 0 ? (
                 task.comments.map((item) => (
@@ -625,7 +620,7 @@ function TaskModal({
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-zinc-400">Sin comentarios.</p>
+                <p className="text-sm text-zinc-400">No comments yet.</p>
               )}
             </div>
             <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
@@ -638,9 +633,9 @@ function TaskModal({
                 type="button"
                 onClick={addComment}
                 disabled={isPending}
-                className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-60"
+                className={`${primaryButtonClass} rounded-xl px-4 py-2`}
               >
-                Comentar
+                Comment
               </button>
             </div>
           </section>
@@ -652,9 +647,9 @@ function TaskModal({
               type="button"
               onClick={archiveCurrentTask}
               disabled={isPending}
-              className="rounded-[28px] border border-white/12 px-4 py-2 text-sm font-semibold text-zinc-300 disabled:opacity-60"
+              className={`${outlineButtonClass} px-4 py-2`}
             >
-              Archivar
+              Archive
             </button>
           ) : (
             <span />
@@ -663,17 +658,17 @@ function TaskModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-[28px] border border-white/12 px-4 py-2 text-sm font-semibold text-zinc-300"
+              className={`${outlineButtonClass} px-4 py-2`}
             >
-              Cancelar
+              Cancel
             </button>
             <button
               type="button"
               onClick={saveTask}
               disabled={isPending || !title.trim()}
-              className="rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-60"
+              className={`${primaryButtonClass} px-4 py-2`}
             >
-              Guardar
+              Save
             </button>
           </div>
         </div>
@@ -770,8 +765,8 @@ function SettingsModal({
   function removeColumn(column: BoardColumn) {
     const message =
       column.tasks.length > 0
-        ? `Eliminar "${column.name}" archivara ${column.tasks.length} tarea(s) asociadas.`
-        : `Eliminar "${column.name}"?`;
+        ? `Deleting "${column.name}" will archive ${column.tasks.length} associated task(s).`
+        : `Delete "${column.name}"?`;
 
     if (!window.confirm(message)) {
       return;
@@ -784,23 +779,26 @@ function SettingsModal({
   }
 
   return (
-    <ModalShell title="Ajustes de columnas" onClose={onClose} wide>
-      <div className="grid gap-4">
+    <ModalShell title="Column settings" onClose={onClose} wide>
+      <div className="grid gap-3 xl:grid-cols-2">
         {draftColumns.map((column, index) => (
-          <section key={column.id} className="rounded-2xl border border-white/10 bg-white/[0.015] p-3">
-            <div className="grid gap-3 md:grid-cols-[1fr_150px_120px]">
+          <section
+            key={column.id}
+            className="rounded-2xl border border-white/10 bg-white/[0.015] p-3"
+          >
+            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_132px_92px]">
               <label className="grid gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-                  Nombre
+                  Name
                 </span>
                 <input
                   value={column.name}
                   onChange={(event) => updateDraft(column.id, { name: event.target.value })}
-                  className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none"
+                  className="h-10 min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none transition focus:border-white/45"
                 />
               </label>
               <SelectField
-                label="Tipo"
+                label="Type"
                 value={column.semanticType}
                 onChange={(value) =>
                   updateDraft(column.id, { semanticType: value as KanbanSemantic })
@@ -817,11 +815,11 @@ function SettingsModal({
                   onChange={(event) =>
                     updateDraft(column.id, { wipLimit: Number(event.target.value) })
                   }
-                  className="rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none"
+                  className="h-10 min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none transition focus:border-white/45"
                 />
               </label>
             </div>
-            <div className="mt-3 grid gap-3 md:grid-cols-[120px_1fr_auto] md:items-end">
+            <div className="mt-3 grid gap-3 sm:grid-cols-[92px_minmax(0,1fr)_auto] sm:items-end">
               <label className="grid gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
                   Color
@@ -837,7 +835,7 @@ function SettingsModal({
               </label>
               <label className="grid gap-2">
                 <span className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
-                  Opacidad {Math.round(column.cardOpacity * 100)}%
+                  Opacity {Math.round(column.cardOpacity * 100)}%
                 </span>
                 <input
                   type="range"
@@ -869,17 +867,17 @@ function SettingsModal({
                   type="button"
                   onClick={() => moveColumn(column.id, -1)}
                   disabled={index === 0 || isPending}
-                  className="rounded-full border border-white/12 px-3 py-1 text-sm text-zinc-300 disabled:opacity-40"
+                  className={`${outlineButtonClass} px-3 py-1`}
                 >
-                  Subir
+                  Up
                 </button>
                 <button
                   type="button"
                   onClick={() => moveColumn(column.id, 1)}
                   disabled={index === draftColumns.length - 1 || isPending}
-                  className="rounded-full border border-white/12 px-3 py-1 text-sm text-zinc-300 disabled:opacity-40"
+                  className={`${outlineButtonClass} px-3 py-1`}
                 >
-                  Bajar
+                  Down
                 </button>
               </div>
               <div className="flex gap-2">
@@ -887,31 +885,31 @@ function SettingsModal({
                   type="button"
                   onClick={() => removeColumn(column)}
                   disabled={isPending || draftColumns.length <= 1}
-                  className="rounded-full border border-white/12 px-3 py-1 text-sm text-zinc-300 disabled:opacity-40"
+                  className={`${outlineButtonClass} px-3 py-1`}
                 >
-                  Eliminar
+                  Delete
                 </button>
                 <button
                   type="button"
                   onClick={() => saveColumn(column)}
                   disabled={isPending || !column.name.trim()}
-                  className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-zinc-950 disabled:opacity-60"
+                  className={`${primaryButtonClass} px-3 py-1`}
                 >
-                  Guardar
+                  Save
                 </button>
               </div>
             </div>
           </section>
         ))}
 
-        <section className="rounded-2xl border border-dashed border-white/14 bg-white/[0.01] p-3">
-          <h3 className="font-semibold text-zinc-50">Nueva columna</h3>
-          <div className="mt-3 grid gap-3 md:grid-cols-[1fr_150px_120px_1fr_auto] md:items-end">
+        <section className="rounded-2xl border border-dashed border-white/14 bg-white/[0.01] p-3 xl:col-span-2">
+          <h3 className="font-semibold text-zinc-50">New column</h3>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px_82px_auto_auto] sm:items-center">
             <input
               value={newColumn.name}
               onChange={(event) => setNewColumn({ ...newColumn, name: event.target.value })}
-              placeholder="Nombre"
-              className="h-10 rounded-xl border border-white/10 bg-black/10 px-3 text-zinc-50 outline-none"
+              placeholder="Name"
+              className="h-10 min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 text-zinc-50 outline-none transition focus:border-white/45"
             />
             <select
               value={newColumn.semanticType}
@@ -921,7 +919,7 @@ function SettingsModal({
                   semanticType: event.target.value as KanbanSemantic,
                 })
               }
-              className="h-10 rounded-xl border border-white/10 bg-black/10 px-3 text-zinc-50 outline-none"
+              className="h-10 min-w-0 rounded-xl border border-white/10 bg-zinc-950 px-3 text-zinc-50 outline-none transition focus:border-white/45"
             >
               {semanticOptions.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -955,9 +953,9 @@ function SettingsModal({
               type="button"
               onClick={addColumn}
               disabled={isPending || !newColumn.name.trim()}
-              className="h-10 rounded-[28px] bg-white px-4 text-sm font-semibold text-zinc-950 disabled:opacity-60"
+              className={`${primaryButtonClass} h-10 px-4`}
             >
-              Crear
+              Create
             </button>
           </div>
         </section>
@@ -1006,7 +1004,7 @@ function CategoriesModal({
   }
 
   return (
-    <ModalShell title="Categorias" onClose={onClose}>
+    <ModalShell title="Categories" onClose={onClose}>
       <div className="grid gap-3">
         {drafts.map((category) => (
           <div key={category.id} className="grid grid-cols-[1fr_auto_auto] gap-2">
@@ -1019,7 +1017,7 @@ function CategoriesModal({
                   ),
                 )
               }
-              className="min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none"
+              className="min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none transition focus:border-white/45"
             />
             <input
               type="color"
@@ -1039,9 +1037,9 @@ function CategoriesModal({
               type="button"
               onClick={() => saveCategory(category)}
               disabled={isPending || !category.name.trim()}
-              className="rounded-xl bg-white px-3 text-sm font-semibold text-zinc-950 disabled:opacity-60"
+              className={`${primaryButtonClass} rounded-xl px-3`}
             >
-              Guardar
+              Save
             </button>
           </div>
         ))}
@@ -1051,8 +1049,8 @@ function CategoriesModal({
             onChange={(event) =>
               setNewCategory({ ...newCategory, name: event.target.value })
             }
-            placeholder="Nueva categoria"
-            className="min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none"
+            placeholder="New category"
+            className="min-w-0 rounded-xl border border-white/10 bg-black/10 px-3 py-2 text-zinc-50 outline-none transition focus:border-white/45"
           />
           <input
             type="color"
@@ -1066,9 +1064,9 @@ function CategoriesModal({
             type="button"
             onClick={addCategory}
             disabled={isPending || !newCategory.name.trim()}
-            className="rounded-xl bg-white px-3 text-sm font-semibold text-zinc-950 disabled:opacity-60"
+            className={`${primaryButtonClass} rounded-xl px-3`}
           >
-            Crear
+            Create
           </button>
         </div>
       </div>
@@ -1095,7 +1093,7 @@ function ArchivedModal({
   }
 
   return (
-    <ModalShell title="Tareas archivadas" onClose={onClose}>
+    <ModalShell title="Archived tasks" onClose={onClose}>
       <div className="grid gap-3">
         {tasks.length > 0 ? (
           tasks.map((task) => (
@@ -1106,21 +1104,21 @@ function ArchivedModal({
               <div>
                 <h3 className="font-semibold text-zinc-50">{task.title}</h3>
                 <p className="mt-1 text-sm text-zinc-400">
-                  Archivada {task.archivedAt ? formatDateTime(task.archivedAt) : ""}
+                  Archived {task.archivedAt ? formatDateTime(task.archivedAt) : ""}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => restore(task.id)}
                 disabled={isPending}
-                className="rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-950 disabled:opacity-60"
+                className={`${primaryButtonClass} px-4 py-2`}
               >
-                Restaurar
+                Restore
               </button>
             </div>
           ))
         ) : (
-          <p className="text-zinc-300">No hay tareas archivadas.</p>
+          <p className="text-zinc-300">No archived tasks.</p>
         )}
       </div>
     </ModalShell>
@@ -1138,24 +1136,35 @@ function ModalShell({
   children: React.ReactNode;
   wide?: boolean;
 }) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/58 px-4 py-6 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 grid place-items-center bg-black/58 px-3 py-4 backdrop-blur-md md:px-5 md:py-6">
       <div
-        className={`panel max-h-[90vh] w-full overflow-auto rounded-[28px] p-5 ${
-          wide ? "max-w-5xl" : "max-w-2xl"
+        className={`panel flex max-h-[calc(100vh-32px)] w-full flex-col rounded-[28px] ${
+          wide ? "max-w-6xl" : "max-w-2xl"
         }`}
       >
-        <header className="mb-5 flex items-center justify-between gap-4">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-white/10 p-5">
           <h2 className="text-2xl font-semibold text-zinc-50">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="glass-button h-9 rounded-full px-3 text-sm font-semibold text-zinc-200"
+            className={`${subtleButtonClass} h-9 px-3`}
           >
-            Cerrar
+            Close
           </button>
         </header>
-        {children}
+        <div className="min-h-0 overflow-y-auto p-5">{children}</div>
       </div>
     </div>
   );
@@ -1194,9 +1203,9 @@ function SelectField({
 
 function priorityLabel(priority: KanbanPriority) {
   const labels = {
-    LOW: "Baja",
-    MEDIUM: "Media",
-    HIGH: "Alta",
+    LOW: "Low",
+    MEDIUM: "Medium",
+    HIGH: "High",
   };
 
   return labels[priority];
@@ -1213,14 +1222,14 @@ function hexToRgba(hex: string, opacity: number) {
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("es-UY", {
+  return new Intl.DateTimeFormat("en", {
     day: "2-digit",
     month: "short",
   }).format(new Date(`${value}T00:00:00`));
 }
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("es-UY", {
+  return new Intl.DateTimeFormat("en", {
     day: "2-digit",
     month: "short",
     hour: "2-digit",

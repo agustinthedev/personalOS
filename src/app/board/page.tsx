@@ -24,9 +24,9 @@ export default async function BoardPage() {
             </div>
 
             <div className="panel-muted grid grid-cols-3 gap-3 rounded-[28px] p-4 text-center">
-              <BoardStat label="Activas" value={data.summary.active.toString()} />
+              <BoardStat label="Active" value={data.summary.active.toString()} />
               <BoardStat label="Done" value={data.summary.completed.toString()} />
-              <BoardStat label="Archivo" value={data.summary.archived.toString()} />
+              <BoardStat label="Archive" value={data.summary.archived.toString()} />
             </div>
           </header>
 
