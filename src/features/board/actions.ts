@@ -682,8 +682,8 @@ export async function addTaskComment(input: {
     })
     .parse(input);
 
-  await prisma.$transaction(async (tx) => {
-    await tx.kanbanTaskComment.create({
+  const comment = await prisma.$transaction(async (tx) => {
+    const createdComment = await tx.kanbanTaskComment.create({
       data: {
         taskId: data.taskId,
         body: data.body,
@@ -697,6 +697,58 @@ export async function addTaskComment(input: {
         type: "COMMENTED",
       },
     });
+
+    return createdComment;
+  });
+
+  revalidatePath(boardPath);
+
+  return {
+    id: comment.id,
+    body: comment.body,
+    createdAt: comment.createdAt.toISOString(),
+  };
+}
+
+export async function deleteTaskComment(input: {
+  boardId: string;
+  taskId: string;
+  commentId: string;
+}) {
+  const data = z
+    .object({
+      boardId: z.string().min(1),
+      taskId: z.string().min(1),
+      commentId: z.string().min(1),
+    })
+    .parse(input);
+
+  await prisma.$transaction(async (tx) => {
+    const deletedComment = await tx.kanbanTaskComment.updateMany({
+      where: {
+        id: data.commentId,
+        taskId: data.taskId,
+        task: { boardId: data.boardId },
+        deletedAt: null,
+      },
+      data: {
+        deletedAt: new Date(),
+      },
+    });
+
+    if (deletedComment.count > 0) {
+      await tx.kanbanTaskEvent.create({
+        data: {
+          taskId: data.taskId,
+          boardId: data.boardId,
+          type: "COMMENTED",
+          metadata: JSON.stringify({
+            action: "comment_deleted",
+            commentId: data.commentId,
+          }),
+        },
+      });
+    }
   });
 
   revalidatePath(boardPath);

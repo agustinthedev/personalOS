@@ -126,10 +126,12 @@ model KanbanTaskComment {
   taskId    String
   task      KanbanTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
   body      String
+  deletedAt DateTime?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
   @@index([taskId, createdAt])
+  @@index([taskId, deletedAt])
 }
 
 model KanbanTaskEvent {
@@ -172,4 +174,173 @@ enum KanbanEventType {
   RESTORED
   COMMENTED
   CHECKLIST_UPDATED
+}
+
+model PortfolioSettings {
+  id                    String   @id @default(cuid())
+  displayCurrency       Currency @default(USD)
+  priceRefreshHours     Int      @default(1)
+  snapshotIntervalHours Int      @default(24)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model PortfolioAsset {
+  id                 String                 @id @default(cuid())
+  name               String
+  symbol             String?
+  kind               PortfolioItemKind
+  marketType         MarketAssetType?
+  manualType         ManualAssetType?
+  currency           Currency
+  manualValue        Decimal?
+  quantityHeld       Decimal?               @default(0)
+  averageCost        Decimal?
+  costBasis          Decimal?
+  currentUnitPrice   Decimal?
+  currentTotalValue  Decimal                @default(0)
+  priceProvider      PriceProvider          @default(MANUAL)
+  autoPriceEnabled   Boolean                @default(false)
+  lastPriceUpdatedAt DateTime?
+  accountNote        String?
+  notes              String?
+  archivedAt         DateTime?
+  createdAt          DateTime               @default(now())
+  updatedAt          DateTime               @updatedAt
+  transactions       PortfolioTransaction[]
+  priceSnapshots     AssetPriceSnapshot[]
+
+  @@index([kind])
+  @@index([marketType])
+  @@index([manualType])
+  @@index([symbol])
+  @@index([archivedAt])
+  @@index([lastPriceUpdatedAt])
+}
+
+model PortfolioTransaction {
+  id          String                   @id @default(cuid())
+  assetId     String
+  asset       PortfolioAsset           @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  type        PortfolioTransactionType
+  quantity    Decimal
+  unitPrice   Decimal?
+  grossAmount Decimal?
+  fees        Decimal?                 @default(0)
+  currency    Currency
+  executedAt  DateTime
+  accountNote String?
+  notes       String?
+  archivedAt  DateTime?
+  createdAt   DateTime                 @default(now())
+  updatedAt   DateTime                 @updatedAt
+
+  @@index([assetId, executedAt])
+  @@index([type])
+  @@index([archivedAt])
+}
+
+model PortfolioLiability {
+  id             String        @id @default(cuid())
+  name           String
+  type           LiabilityType @default(OTHER)
+  currency       Currency
+  currentBalance Decimal
+  accountNote    String?
+  notes          String?
+  archivedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([archivedAt])
+}
+
+model AssetPriceSnapshot {
+  id         String         @id @default(cuid())
+  assetId    String
+  asset      PortfolioAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  unitPrice  Decimal
+  currency   Currency
+  source     String
+  capturedAt DateTime       @default(now())
+
+  @@index([assetId, capturedAt])
+}
+
+model PortfolioSnapshot {
+  id               String         @id @default(cuid())
+  totalAssets      Decimal
+  totalLiabilities Decimal
+  netWorth         Decimal
+  currency         Currency
+  source           SnapshotSource @default(AUTO)
+  note             String?
+  capturedAt       DateTime       @default(now())
+
+  @@index([currency, capturedAt])
+  @@index([source, capturedAt])
+}
+
+model ExchangeRateSnapshot {
+  id         String   @id @default(cuid())
+  base       Currency
+  quote      Currency
+  rate       Decimal
+  source     String
+  capturedAt DateTime @default(now())
+
+  @@index([base, quote, capturedAt])
+}
+
+enum Currency {
+  USD
+  UYU
+}
+
+enum PortfolioItemKind {
+  MARKET_ASSET
+  MANUAL_ASSET
+}
+
+enum MarketAssetType {
+  STOCK
+  ETF
+  FUND
+  CRYPTO
+  COMMODITY
+}
+
+enum ManualAssetType {
+  CASH
+  REAL_ESTATE
+  VEHICLE
+  COLLECTIBLE
+  OTHER
+}
+
+enum LiabilityType {
+  LOAN
+  CREDIT_CARD
+  MORTGAGE
+  PERSONAL_DEBT
+  OTHER
+}
+
+enum PriceProvider {
+  MANUAL
+  MARKET_API
+  FX_API
+}
+
+enum PortfolioTransactionType {
+  BUY
+  SELL
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+}
+
+enum SnapshotSource {
+  AUTO
+  MANUAL
 }

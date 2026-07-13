@@ -41,6 +41,7 @@ type TaskRecord = {
     id: string;
     body: string;
     createdAt: Date;
+    deletedAt: Date | null;
   }[];
 };
 
@@ -196,6 +197,7 @@ const taskIncludes = {
     orderBy: { position: "asc" as const },
   },
   comments: {
+    where: { deletedAt: null },
     orderBy: { createdAt: "asc" as const },
   },
 };

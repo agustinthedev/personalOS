@@ -26,6 +26,7 @@ import {
   createColumn,
   createTask,
   deleteColumn,
+  deleteTaskComment,
   reorderTasks,
   restoreTask,
   updateCategory,
@@ -36,6 +37,7 @@ import {
   BoardCategory,
   BoardChecklistItem,
   BoardColumn,
+  BoardComment,
   BoardPageData,
   BoardTask,
   KanbanPriority,
@@ -303,6 +305,7 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
 
       {activeModal?.type === "task" ? (
         <TaskModal
+          key={activeModal.task?.id ?? `new-${activeModal.columnId}`}
           boardId={data.board.id}
           columns={data.columns}
           categories={data.categories}
@@ -597,6 +600,7 @@ function TaskModal({
   const [checklist, setChecklist] = useState<BoardChecklistItem[]>(
     task?.checklistItems ?? [],
   );
+  const [comments, setComments] = useState<BoardComment[]>(task?.comments ?? []);
   const [comment, setComment] = useState("");
 
   function saveTask() {
@@ -660,8 +664,21 @@ function TaskModal({
     }
 
     startTransition(async () => {
-      await addTaskComment({ boardId, taskId: task.id, body: comment });
+      const createdComment = await addTaskComment({ boardId, taskId: task.id, body: comment });
+      setComments((items) => [...items, createdComment]);
       setComment("");
+      onSaved();
+    });
+  }
+
+  function deleteComment(commentId: string) {
+    if (!task) {
+      return;
+    }
+
+    startTransition(async () => {
+      await deleteTaskComment({ boardId, taskId: task.id, commentId });
+      setComments((items) => items.filter((item) => item.id !== commentId));
       onSaved();
     });
   }
@@ -782,13 +799,28 @@ function TaskModal({
           <section className="grid gap-3 rounded-2xl border border-white/10 bg-white/[0.015] p-3">
             <h3 className="font-semibold text-zinc-50">Comments</h3>
             <div className="glass-scrollbar grid max-h-48 gap-2 overflow-auto pr-1">
-              {task.comments.length > 0 ? (
-                task.comments.map((item) => (
-                  <div key={item.id} className="rounded-xl bg-black/14 p-3">
-                    <p className="text-sm leading-6 text-zinc-200">{item.body}</p>
-                    <p className="mt-2 font-mono text-[11px] text-zinc-500">
-                      {formatDateTime(item.createdAt)}
-                    </p>
+              {comments.length > 0 ? (
+                comments.map((item) => (
+                  <div
+                    key={item.id}
+                    className="grid gap-3 rounded-xl bg-black/14 p-3 sm:grid-cols-[1fr_auto]"
+                  >
+                    <div>
+                      <p className="text-sm leading-6 text-zinc-200">{item.body}</p>
+                      <p className="mt-2 font-mono text-[11px] text-zinc-500">
+                        {formatDateTime(item.createdAt)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => deleteComment(item.id)}
+                      aria-label="Delete comment"
+                      title="Delete comment"
+                      disabled={isPending}
+                      className={`${dangerIconButtonClass} flex h-8 w-8 items-center justify-center p-0`}
+                    >
+                      <TrashIcon />
+                    </button>
                   </div>
                 ))
               ) : (
@@ -1349,7 +1381,7 @@ function ModalShell({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/58 px-3 py-4 backdrop-blur-md md:px-5 md:py-6">
       <div
-        className={`panel flex max-h-[calc(100vh-32px)] w-full flex-col rounded-[28px] ${
+        className={`panel glass-scrollbar flex max-h-[calc(100vh-32px)] w-full flex-col rounded-[28px] ${
           wide ? "max-w-6xl" : "max-w-2xl"
         }`}
       >

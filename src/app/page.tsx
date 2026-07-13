@@ -30,6 +30,14 @@ const apps = [
     accent: "from-sky-200/65 to-emerald-300/35",
     description: "A personal task board with columns, categories, checklists, and comments.",
   },
+  {
+    name: "Portfolio",
+    href: "/portfolio",
+    status: "Live",
+    metric: "Net worth",
+    accent: "from-emerald-200/65 to-sky-300/35",
+    description: "Track assets, liabilities, investments, and net worth over time.",
+  },
 ];
 
 const activityBars = [42, 68, 52, 76, 58, 86, 74, 92, 63, 80, 72, 88];
@@ -170,6 +178,12 @@ function TopBar() {
           className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-[0_0_28px_rgba(255,255,255,0.16)] transition hover:bg-zinc-100"
         >
           Open Board
+        </a>
+        <a
+          href="/portfolio"
+          className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-[0_0_28px_rgba(255,255,255,0.16)] transition hover:bg-zinc-100"
+        >
+          Open Portfolio
         </a>
       </div>
     </div>

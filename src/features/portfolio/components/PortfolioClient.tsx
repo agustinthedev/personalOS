@@ -1,0 +1,1088 @@
+"use client";
+
+import { FormEvent, type ReactNode, useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  archiveAsset,
+  archiveLiability,
+  archivePortfolioTransaction,
+  createLiability,
+  createManualAsset,
+  createMarketAsset,
+  createPortfolioSnapshotNow,
+  createPortfolioTransaction,
+  refreshPortfolioPrices,
+  updateLiability,
+  updateManualAsset,
+  updateMarketAsset,
+  updatePortfolioSettings,
+  type PortfolioActionResult,
+} from "@/features/portfolio/actions";
+import {
+  currencyOptions,
+  liabilityTypeOptions,
+  manualAssetTypeOptions,
+  marketAssetTypeOptions,
+  transactionTypeOptions,
+  type CurrencyCode,
+  type PortfolioAssetView,
+  type PortfolioLiabilityView,
+  type PortfolioMetric,
+  type PortfolioPageData,
+} from "@/features/portfolio/types";
+
+type ModalState =
+  | { type: "market"; asset?: PortfolioAssetView }
+  | { type: "manual"; asset?: PortfolioAssetView }
+  | { type: "liability"; liability?: PortfolioLiabilityView }
+  | { type: "transaction"; asset?: PortfolioAssetView }
+  | { type: "settings" }
+  | { type: "checkpoint" }
+  | null;
+
+const primaryButton =
+  "cursor-pointer rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-950 shadow-[0_0_24px_rgba(255,255,255,0.14)] transition hover:-translate-y-0.5 hover:bg-zinc-100 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50";
+const subtleButton =
+  "glass-button cursor-pointer rounded-[28px] px-3 py-2 text-sm font-semibold text-zinc-200 transition hover:-translate-y-0.5 hover:border-white/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45";
+const ghostButton =
+  "cursor-pointer rounded-[28px] border border-white/12 bg-white/[0.012] px-3 py-2 text-sm font-semibold text-zinc-300 transition hover:-translate-y-0.5 hover:border-white/40 hover:text-zinc-50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-45";
+const fieldClass =
+  "h-10 w-full rounded-[18px] border border-white/12 bg-black/20 px-3 text-sm text-zinc-50 outline-none transition placeholder:text-zinc-600 focus:border-white/45";
+const selectClass =
+  "h-10 w-full cursor-pointer appearance-none rounded-[18px] border border-white/12 bg-[#05070c] px-3 text-sm text-zinc-50 outline-none transition focus:border-white/45";
+const textAreaClass =
+  "min-h-20 w-full rounded-[18px] border border-white/12 bg-black/20 px-3 py-2 text-sm text-zinc-50 outline-none transition placeholder:text-zinc-600 focus:border-white/45";
+const labelClass = "text-xs font-semibold uppercase tracking-[0.16em] text-zinc-400";
+
+export function PortfolioClient({ initialData }: { initialData: PortfolioPageData }) {
+  const router = useRouter();
+  const [modal, setModal] = useState<ModalState>(null);
+  const [error, setError] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (!modal) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setModal(null);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [modal]);
+
+  function runAction(action: () => Promise<PortfolioActionResult>) {
+    setError("");
+    startTransition(async () => {
+      const result = await action();
+      if (!result.ok) {
+        setError(result.error ?? "Something went wrong.");
+        return;
+      }
+      setModal(null);
+      router.refresh();
+    });
+  }
+
+  const data = initialData;
+  const allAssets = [...data.marketAssets, ...data.manualAssets];
+
+  return (
+    <>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={primaryButton} onClick={() => setModal({ type: "market" })}>
+            Add market asset
+          </button>
+          <button type="button" className={subtleButton} onClick={() => setModal({ type: "manual" })}>
+            Add manual asset
+          </button>
+          <button type="button" className={subtleButton} onClick={() => setModal({ type: "liability" })}>
+            Add liability
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className={ghostButton}
+            disabled={isPending}
+            onClick={() => runAction(refreshPortfolioPrices)}
+          >
+            Refresh prices
+          </button>
+          <button type="button" className={ghostButton} onClick={() => setModal({ type: "checkpoint" })}>
+            Create checkpoint
+          </button>
+          <button type="button" className={ghostButton} onClick={() => setModal({ type: "settings" })}>
+            Settings
+          </button>
+        </div>
+      </div>
+
+      {error ? (
+        <div className="panel-muted mb-4 rounded-[24px] border-red-300/30 p-4 text-sm text-red-100">
+          {error}
+        </div>
+      ) : null}
+
+      {data.warnings.length > 0 ? (
+        <div className="panel-muted mb-4 rounded-[24px] p-4 text-sm text-amber-100">
+          {data.warnings.slice(0, 3).map((warning) => (
+            <p key={warning}>{warning}</p>
+          ))}
+        </div>
+      ) : null}
+
+      <section className="mb-5 grid gap-4 md:grid-cols-4">
+        <MetricCard metric={data.metrics.totalAssets} />
+        <MetricCard metric={data.metrics.totalLiabilities} />
+        <MetricCard metric={data.metrics.netWorth} emphasis />
+        <MetricCard metric={data.metrics.liquidAssets} />
+      </section>
+
+      <section className="mb-5 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
+        <HistoryPanel data={data} />
+        <AllocationPanel data={data} />
+      </section>
+
+      {allAssets.length === 0 && data.liabilities.length === 0 ? (
+        <section className="panel mb-5 rounded-[28px] p-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
+            Portfolio is empty
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold text-zinc-50">Start with one asset or liability.</h2>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <button type="button" className={primaryButton} onClick={() => setModal({ type: "market" })}>
+              Add market asset
+            </button>
+            <button type="button" className={subtleButton} onClick={() => setModal({ type: "manual" })}>
+              Add manual asset
+            </button>
+            <button type="button" className={subtleButton} onClick={() => setModal({ type: "liability" })}>
+              Add liability
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      <section className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
+        <div className="space-y-4">
+          <AssetSection
+            title="Market Assets"
+            assets={data.marketAssets}
+            emptyLabel="No market assets yet."
+            onEdit={(asset) => setModal({ type: "market", asset })}
+            onTransaction={(asset) => setModal({ type: "transaction", asset })}
+            onArchive={(asset) => runAction(() => archiveAsset(asset.id))}
+            onArchiveTransaction={(transactionId) => runAction(() => archivePortfolioTransaction(transactionId))}
+          />
+          <AssetSection
+            title="Other Assets"
+            assets={data.manualAssets}
+            emptyLabel="No manual assets yet."
+            onEdit={(asset) => setModal({ type: "manual", asset })}
+            onTransaction={null}
+            onArchive={(asset) => runAction(() => archiveAsset(asset.id))}
+            onArchiveTransaction={(transactionId) => runAction(() => archivePortfolioTransaction(transactionId))}
+          />
+        </div>
+        <LiabilitySection
+          liabilities={data.liabilities}
+          onEdit={(liability) => setModal({ type: "liability", liability })}
+          onArchive={(liability) => runAction(() => archiveLiability(liability.id))}
+        />
+      </section>
+
+      {modal ? (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-8 backdrop-blur-sm">
+          <div className="panel w-full max-w-3xl rounded-[28px] p-5">
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <h2 className="text-2xl font-semibold text-zinc-50">{modalTitle(modal)}</h2>
+              <button type="button" className={ghostButton} onClick={() => setModal(null)}>
+                Close
+              </button>
+            </div>
+
+            {modal.type === "market" ? (
+              <MarketAssetForm
+                asset={modal.asset}
+                isPending={isPending}
+                onSubmit={(payload) =>
+                  runAction(() =>
+                    modal.asset
+                      ? updateMarketAsset(payload as Parameters<typeof updateMarketAsset>[0])
+                      : createMarketAsset(payload as Parameters<typeof createMarketAsset>[0]),
+                  )
+                }
+              />
+            ) : null}
+
+            {modal.type === "manual" ? (
+              <ManualAssetForm
+                asset={modal.asset}
+                isPending={isPending}
+                onSubmit={(payload) =>
+                  runAction(() =>
+                    modal.asset
+                      ? updateManualAsset(payload as Parameters<typeof updateManualAsset>[0])
+                      : createManualAsset(payload as Parameters<typeof createManualAsset>[0]),
+                  )
+                }
+              />
+            ) : null}
+
+            {modal.type === "liability" ? (
+              <LiabilityForm
+                liability={modal.liability}
+                isPending={isPending}
+                onSubmit={(payload) =>
+                  runAction(() =>
+                    modal.liability
+                      ? updateLiability(payload as Parameters<typeof updateLiability>[0])
+                      : createLiability(payload as Parameters<typeof createLiability>[0]),
+                  )
+                }
+              />
+            ) : null}
+
+            {modal.type === "transaction" ? (
+              <TransactionForm
+                assets={data.marketAssets}
+                initialAsset={modal.asset}
+                isPending={isPending}
+                onSubmit={(payload) =>
+                  runAction(() =>
+                    createPortfolioTransaction(payload as Parameters<typeof createPortfolioTransaction>[0]),
+                  )
+                }
+              />
+            ) : null}
+
+            {modal.type === "settings" ? (
+              <SettingsForm
+                data={data}
+                isPending={isPending}
+                onSubmit={(payload) =>
+                  runAction(() =>
+                    updatePortfolioSettings(payload as Parameters<typeof updatePortfolioSettings>[0]),
+                  )
+                }
+              />
+            ) : null}
+
+            {modal.type === "checkpoint" ? (
+              <CheckpointForm
+                isPending={isPending}
+                onSubmit={(note) => runAction(() => createPortfolioSnapshotNow(note))}
+              />
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
+}
+
+function MetricCard({ metric, emphasis = false }: { metric: PortfolioMetric; emphasis?: boolean }) {
+  return (
+    <div className={`panel rounded-[28px] p-5 ${emphasis ? "border-white/40" : ""}`}>
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">{metric.label}</p>
+      <p className="mt-4 font-mono text-3xl font-semibold text-zinc-50">
+        {formatMoney(metric.value, metric.currency)}
+      </p>
+      <p className={`mt-3 text-sm font-medium ${changeTone(metric.sevenDayChange)}`}>
+        {formatChange(metric.sevenDayChange, metric.sevenDayChangePercent, metric.currency)}
+      </p>
+      <p className={`mt-1 text-xs font-medium ${changeTone(metric.thirtyDayChange)}`}>
+        {formatPeriodChange(metric.thirtyDayChange, metric.thirtyDayChangePercent, metric.currency, "30d")}
+      </p>
+    </div>
+  );
+}
+
+function HistoryPanel({ data }: { data: PortfolioPageData }) {
+  const points = data.snapshots.slice(-24);
+  const max = Math.max(...points.map((snapshot) => snapshot.totalAssets), 1);
+
+  return (
+    <div className="panel rounded-[28px] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">History</p>
+          <h2 className="mt-2 text-xl font-semibold text-zinc-50">Net worth over time</h2>
+        </div>
+        <div className="text-right text-xs text-zinc-400">
+          <p>Snapshot {formatDate(data.freshness.lastSnapshot)}</p>
+          <p>FX {data.freshness.fxRate ? data.freshness.fxRate.toFixed(2) : "n/a"}</p>
+        </div>
+      </div>
+      <div className="bar-grid mt-7 flex h-64 items-end gap-2 rounded-[24px] border border-white/10 bg-white/[0.012] px-4 pb-4">
+        {points.length > 0 ? (
+          points.map((snapshot) => (
+            <div key={snapshot.id} className="flex flex-1 flex-col items-center justify-end gap-2">
+              <div
+                className="w-full rounded-t bg-gradient-to-t from-white/70 to-sky-200/30"
+                style={{ height: `${Math.max(4, (snapshot.netWorth / max) * 100)}%` }}
+                title={`${formatDate(snapshot.capturedAt)} ${formatMoney(snapshot.netWorth, snapshot.currency)}`}
+              />
+              <div className="h-1 w-full rounded bg-white/40" />
+            </div>
+          ))
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-sm text-zinc-500">
+            No snapshots yet.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AllocationPanel({ data }: { data: PortfolioPageData }) {
+  const assets = [...data.marketAssets, ...data.manualAssets].sort(
+    (a, b) => b.displayValue - a.displayValue,
+  );
+  const unrealizedGain = data.marketAssets.reduce(
+    (total, asset) => total + (asset.unrealizedGain ?? 0),
+    0,
+  );
+
+  return (
+    <div className="panel rounded-[28px] p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">Allocation</p>
+      <h2 className="mt-2 text-xl font-semibold text-zinc-50">Category mix</h2>
+      <div className="mt-6 space-y-4">
+        {data.allocationByCategory.length > 0 ? (
+          data.allocationByCategory.map((item) => (
+            <AllocationRow key={item.label} label={item.label} value={item.value} percent={item.percent} currency={data.settings.displayCurrency} />
+          ))
+        ) : (
+          <p className="text-sm text-zinc-500">No allocation yet.</p>
+        )}
+      </div>
+      <div className="mt-7 border-t border-white/10 pt-5">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">Currency mix</p>
+        <div className="mt-4 space-y-3">
+          {data.allocationByCurrency.map((item) => (
+            <AllocationRow key={item.label} label={item.label} value={item.value} percent={item.percent} currency={data.settings.displayCurrency} compact />
+          ))}
+        </div>
+      </div>
+      <div className="mt-7 border-t border-white/10 pt-5">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-400">
+            Unrealized gain/loss
+          </p>
+          <p className={`font-mono text-sm ${changeTone(unrealizedGain)}`}>
+            {formatMoney(unrealizedGain, data.settings.displayCurrency)}
+          </p>
+        </div>
+        <div className="mt-5 space-y-3">
+          {assets.slice(0, 4).map((asset) => (
+            <div key={asset.id} className="flex items-center justify-between gap-3 text-sm">
+              <span className="truncate text-zinc-300">{asset.name}</span>
+              <span className="font-mono text-zinc-500">
+                {formatMoney(asset.displayValue, asset.displayCurrency)}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AllocationRow({
+  label,
+  value,
+  percent,
+  currency,
+  compact = false,
+}: {
+  label: string;
+  value: number;
+  percent: number;
+  currency: CurrencyCode;
+  compact?: boolean;
+}) {
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
+        <span className="font-medium text-zinc-200">{label}</span>
+        <span className="font-mono text-zinc-400">{formatMoney(value, currency)}</span>
+      </div>
+      <div className={`rounded-full bg-white/10 ${compact ? "h-1.5" : "h-2"}`}>
+        <div className="h-full rounded-full bg-white/70" style={{ width: `${Math.max(2, percent * 100)}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function AssetSection({
+  title,
+  assets,
+  emptyLabel,
+  onEdit,
+  onTransaction,
+  onArchive,
+  onArchiveTransaction,
+}: {
+  title: string;
+  assets: PortfolioAssetView[];
+  emptyLabel: string;
+  onEdit: (asset: PortfolioAssetView) => void;
+  onTransaction: ((asset: PortfolioAssetView) => void) | null;
+  onArchive: (asset: PortfolioAssetView) => void;
+  onArchiveTransaction: (transactionId: string) => void;
+}) {
+  return (
+    <section className="panel rounded-[28px] p-5">
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">{title}</p>
+          <h2 className="mt-2 text-xl font-semibold text-zinc-50">{assets.length} positions</h2>
+        </div>
+      </div>
+      <div className="space-y-3">
+        {assets.length > 0 ? (
+          assets.map((asset) => (
+            <article key={asset.id} className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-semibold text-zinc-50">{asset.name}</h3>
+                    {asset.symbol ? <span className="font-mono text-xs text-zinc-400">{asset.symbol}</span> : null}
+                    <span className="rounded-full border border-white/10 px-2 py-1 text-xs text-zinc-300">
+                      {asset.visualCategory}
+                    </span>
+                    <span className={`rounded-full border px-2 py-1 text-xs ${statusClass(asset.priceStatus)}`}>
+                      {asset.priceStatus}
+                    </span>
+                  </div>
+                  {asset.accountNote ? <p className="mt-2 text-sm text-zinc-500">{asset.accountNote}</p> : null}
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-xl font-semibold text-zinc-50">
+                    {formatMoney(asset.displayValue, asset.displayCurrency)}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {formatMoney(asset.currentTotalValue, asset.currency)}
+                  </p>
+                </div>
+              </div>
+
+              {asset.kind === "MARKET_ASSET" ? (
+                <div className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
+                  <AssetStat label="Quantity" value={formatQuantity(asset.quantityHeld)} />
+                  <AssetStat label="Unit price" value={asset.currentUnitPrice ? formatMoney(asset.currentUnitPrice, asset.currency) : "-"} />
+                  <AssetStat label="Avg cost" value={asset.averageCost ? formatMoney(asset.averageCost, asset.currency) : "-"} />
+                  <AssetStat
+                    label="Unrealized P/L"
+                    value={asset.unrealizedGain === null ? "-" : formatChange(asset.unrealizedGain, asset.unrealizedGainPercent, asset.displayCurrency)}
+                    tone={changeTone(asset.unrealizedGain)}
+                  />
+                </div>
+              ) : null}
+
+              {asset.transactions.length > 0 ? (
+                <div className="mt-4 rounded-[20px] border border-white/10 bg-black/10 p-3">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                    Recent transactions
+                  </p>
+                  <div className="space-y-2">
+                    {asset.transactions.slice(0, 4).map((transaction) => (
+                      <div key={transaction.id} className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-300">
+                        <span>
+                          {transaction.type.replace("_", " ")} · {formatQuantity(transaction.quantity)} ·{" "}
+                          {transaction.grossAmount ? formatMoney(transaction.grossAmount, transaction.currency) : "no amount"}
+                        </span>
+                        <button type="button" className="text-xs font-semibold text-zinc-500 hover:text-zinc-50" onClick={() => onArchiveTransaction(transaction.id)}>
+                          Archive
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {onTransaction ? (
+                  <button type="button" className={subtleButton} onClick={() => onTransaction(asset)}>
+                    Add transaction
+                  </button>
+                ) : null}
+                <button type="button" className={ghostButton} onClick={() => onEdit(asset)}>
+                  Edit
+                </button>
+                <button type="button" className={ghostButton} onClick={() => onArchive(asset)}>
+                  Archive
+                </button>
+              </div>
+            </article>
+          ))
+        ) : (
+          <p className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4 text-sm text-zinc-500">
+            {emptyLabel}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function LiabilitySection({
+  liabilities,
+  onEdit,
+  onArchive,
+}: {
+  liabilities: PortfolioLiabilityView[];
+  onEdit: (liability: PortfolioLiabilityView) => void;
+  onArchive: (liability: PortfolioLiabilityView) => void;
+}) {
+  return (
+    <section className="panel rounded-[28px] p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">Liabilities</p>
+      <h2 className="mt-2 text-xl font-semibold text-zinc-50">{liabilities.length} open balances</h2>
+      <div className="mt-5 space-y-3">
+        {liabilities.length > 0 ? (
+          liabilities.map((liability) => (
+            <article key={liability.id} className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-50">{liability.name}</h3>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {liability.type.replace("_", " ")}
+                    {liability.accountNote ? ` · ${liability.accountNote}` : ""}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-xl font-semibold text-zinc-50">
+                    {formatMoney(liability.displayBalance, liability.displayCurrency)}
+                  </p>
+                  <p className="mt-1 text-xs text-zinc-500">
+                    {formatMoney(liability.currentBalance, liability.currency)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <button type="button" className={ghostButton} onClick={() => onEdit(liability)}>
+                  Edit
+                </button>
+                <button type="button" className={ghostButton} onClick={() => onArchive(liability)}>
+                  Archive
+                </button>
+              </div>
+            </article>
+          ))
+        ) : (
+          <p className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4 text-sm text-zinc-500">
+            No liabilities yet.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AssetStat({ label, value, tone = "text-zinc-300" }: { label: string; value: string; tone?: string }) {
+  return (
+    <div>
+      <p className="text-xs uppercase tracking-[0.14em] text-zinc-500">{label}</p>
+      <p className={`mt-1 font-mono ${tone}`}>{value}</p>
+    </div>
+  );
+}
+
+function MarketAssetForm({
+  asset,
+  isPending,
+  onSubmit,
+}: {
+  asset?: PortfolioAssetView;
+  isPending: boolean;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}) {
+  const [createInitialBuy, setCreateInitialBuy] = useState(false);
+  const [inputMode, setInputMode] = useState<"AMOUNT" | "QUANTITY">("AMOUNT");
+  const [quantity, setQuantity] = useState("");
+  const [grossAmount, setGrossAmount] = useState("");
+  const [unitPrice, setUnitPrice] = useState(asset?.currentUnitPrice?.toString() ?? "");
+
+  const computed = useMemo(() => computeTrade(inputMode, quantity, grossAmount, unitPrice), [inputMode, quantity, grossAmount, unitPrice]);
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit({
+      assetId: asset?.id,
+      name: String(form.get("name") ?? ""),
+      symbol: String(form.get("symbol") ?? ""),
+      marketType: String(form.get("marketType") ?? "CRYPTO"),
+      currency: String(form.get("currency") ?? "USD"),
+      autoPriceEnabled: form.get("autoPriceEnabled") === "on",
+      initialUnitPrice: String(form.get("initialUnitPrice") ?? ""),
+      accountNote: String(form.get("accountNote") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+      createInitialBuy,
+      initialInputMode: inputMode,
+      initialQuantity: quantity,
+      initialGrossAmount: grossAmount,
+      initialFees: String(form.get("initialFees") ?? "0"),
+      initialExecutedAt: String(form.get("initialExecutedAt") ?? ""),
+    });
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={submit}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Name"><input name="name" className={fieldClass} defaultValue={asset?.name ?? ""} required /></Field>
+        <Field label="Symbol"><input name="symbol" className={fieldClass} defaultValue={asset?.symbol ?? ""} required /></Field>
+        <Field label="Type"><Select name="marketType" options={marketAssetTypeOptions} defaultValue={asset?.marketType ?? "CRYPTO"} /></Field>
+        <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={asset?.currency ?? "USD"} /></Field>
+        <Field label="Unit price"><input name="initialUnitPrice" className={fieldClass} value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} placeholder="Latest or manual price" /></Field>
+        <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
+          <input name="autoPriceEnabled" type="checkbox" defaultChecked={asset?.autoPriceEnabled ?? true} />
+          Auto refresh price
+        </label>
+      </div>
+
+      {!asset ? (
+        <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
+          <input type="checkbox" checked={createInitialBuy} onChange={(event) => setCreateInitialBuy(event.target.checked)} />
+          Add initial buy transaction
+        </label>
+      ) : null}
+
+      {createInitialBuy ? (
+        <TradeInputs
+          inputMode={inputMode}
+          setInputMode={setInputMode}
+          quantity={quantity}
+          setQuantity={setQuantity}
+          grossAmount={grossAmount}
+          setGrossAmount={setGrossAmount}
+          unitPrice={unitPrice}
+          computed={computed}
+        />
+      ) : null}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Account note"><input name="accountNote" className={fieldClass} defaultValue={asset?.accountNote ?? ""} /></Field>
+        <Field label="Executed at"><input name="initialExecutedAt" type="date" className={fieldClass} defaultValue={today()} /></Field>
+      </div>
+      <Field label="Notes"><textarea name="notes" className={textAreaClass} defaultValue={asset?.notes ?? ""} /></Field>
+      <input name="initialFees" type="hidden" value="0" />
+      <button type="submit" className={primaryButton} disabled={isPending}>{asset ? "Save asset" : "Create asset"}</button>
+    </form>
+  );
+}
+
+function ManualAssetForm({
+  asset,
+  isPending,
+  onSubmit,
+}: {
+  asset?: PortfolioAssetView;
+  isPending: boolean;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit({
+      assetId: asset?.id,
+      name: String(form.get("name") ?? ""),
+      manualType: String(form.get("manualType") ?? "CASH"),
+      currency: String(form.get("currency") ?? "USD"),
+      manualValue: String(form.get("manualValue") ?? "0"),
+      accountNote: String(form.get("accountNote") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+    });
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={submit}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Name"><input name="name" className={fieldClass} defaultValue={asset?.name ?? ""} required /></Field>
+        <Field label="Category"><Select name="manualType" options={manualAssetTypeOptions} defaultValue={asset?.manualType ?? "CASH"} /></Field>
+        <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={asset?.currency ?? "USD"} /></Field>
+        <Field label="Value"><input name="manualValue" type="number" step="0.01" min="0" className={fieldClass} defaultValue={asset?.manualValue ?? ""} required /></Field>
+        <Field label="Account note"><input name="accountNote" className={fieldClass} defaultValue={asset?.accountNote ?? ""} /></Field>
+      </div>
+      <Field label="Notes"><textarea name="notes" className={textAreaClass} defaultValue={asset?.notes ?? ""} /></Field>
+      <button type="submit" className={primaryButton} disabled={isPending}>{asset ? "Save asset" : "Create asset"}</button>
+    </form>
+  );
+}
+
+function LiabilityForm({
+  liability,
+  isPending,
+  onSubmit,
+}: {
+  liability?: PortfolioLiabilityView;
+  isPending: boolean;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit({
+      liabilityId: liability?.id,
+      name: String(form.get("name") ?? ""),
+      type: String(form.get("type") ?? "OTHER"),
+      currency: String(form.get("currency") ?? "USD"),
+      currentBalance: String(form.get("currentBalance") ?? "0"),
+      accountNote: String(form.get("accountNote") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+    });
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={submit}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Name"><input name="name" className={fieldClass} defaultValue={liability?.name ?? ""} required /></Field>
+        <Field label="Type"><Select name="type" options={liabilityTypeOptions} defaultValue={liability?.type ?? "OTHER"} /></Field>
+        <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={liability?.currency ?? "USD"} /></Field>
+        <Field label="Balance"><input name="currentBalance" type="number" step="0.01" min="0" className={fieldClass} defaultValue={liability?.currentBalance ?? ""} required /></Field>
+        <Field label="Account note"><input name="accountNote" className={fieldClass} defaultValue={liability?.accountNote ?? ""} /></Field>
+      </div>
+      <Field label="Notes"><textarea name="notes" className={textAreaClass} defaultValue={liability?.notes ?? ""} /></Field>
+      <button type="submit" className={primaryButton} disabled={isPending}>{liability ? "Save liability" : "Create liability"}</button>
+    </form>
+  );
+}
+
+function TransactionForm({
+  assets,
+  initialAsset,
+  isPending,
+  onSubmit,
+}: {
+  assets: PortfolioAssetView[];
+  initialAsset?: PortfolioAssetView;
+  isPending: boolean;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}) {
+  const [assetId, setAssetId] = useState(initialAsset?.id ?? assets[0]?.id ?? "");
+  const selectedAsset = assets.find((asset) => asset.id === assetId) ?? assets[0];
+  const [type, setType] = useState("BUY");
+  const [inputMode, setInputMode] = useState<"AMOUNT" | "QUANTITY">("AMOUNT");
+  const [quantity, setQuantity] = useState("");
+  const [grossAmount, setGrossAmount] = useState("");
+  const [unitPrice, setUnitPrice] = useState(selectedAsset?.currentUnitPrice?.toString() ?? "");
+
+  const computed = useMemo(() => computeTrade(inputMode, quantity, grossAmount, unitPrice), [inputMode, quantity, grossAmount, unitPrice]);
+  const overdrawn = (type === "SELL" || type === "TRANSFER_OUT") && computed.quantity > (selectedAsset?.quantityHeld ?? 0);
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit({
+      assetId,
+      type,
+      inputMode,
+      quantity,
+      unitPrice,
+      grossAmount,
+      fees: String(form.get("fees") ?? "0"),
+      currency: String(form.get("currency") ?? selectedAsset?.currency ?? "USD"),
+      executedAt: String(form.get("executedAt") ?? ""),
+      accountNote: String(form.get("accountNote") ?? ""),
+      notes: String(form.get("notes") ?? ""),
+    });
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={submit}>
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Asset">
+          <select
+            className={selectClass}
+            value={assetId}
+            onChange={(event) => {
+              const nextAssetId = event.target.value;
+              const nextAsset = assets.find((asset) => asset.id === nextAssetId);
+              setAssetId(nextAssetId);
+              setUnitPrice(nextAsset?.currentUnitPrice?.toString() ?? "");
+            }}
+            required
+          >
+            {assets.map((asset) => (
+              <option key={asset.id} value={asset.id}>{asset.name} {asset.symbol ? `(${asset.symbol})` : ""}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Type">
+          <select className={selectClass} value={type} onChange={(event) => setType(event.target.value)}>
+            {transactionTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={selectedAsset?.currency ?? "USD"} /></Field>
+        <Field label="Executed at"><input name="executedAt" type="date" className={fieldClass} defaultValue={today()} required /></Field>
+      </div>
+
+      <TradeInputs
+        inputMode={inputMode}
+        setInputMode={setInputMode}
+        quantity={quantity}
+        setQuantity={setQuantity}
+        grossAmount={grossAmount}
+        setGrossAmount={setGrossAmount}
+        unitPrice={unitPrice}
+        setUnitPrice={setUnitPrice}
+        computed={computed}
+      />
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <Field label="Fees"><input name="fees" type="number" min="0" step="0.01" className={fieldClass} defaultValue="0" /></Field>
+        <Field label="Account note"><input name="accountNote" className={fieldClass} /></Field>
+      </div>
+      <Field label="Notes"><textarea name="notes" className={textAreaClass} required={type === "ADJUSTMENT"} /></Field>
+
+      <div className="rounded-[20px] border border-white/10 bg-black/10 p-4 text-sm text-zinc-300">
+        <p>Quantity impact: {formatQuantity(computed.quantity)}</p>
+        <p>Estimated amount: {formatMoney(computed.grossAmount, selectedAsset?.currency ?? "USD")}</p>
+        <p>New holding: {formatQuantity((selectedAsset?.quantityHeld ?? 0) + quantityImpact(type, computed.quantity))}</p>
+        {overdrawn ? <p className="mt-2 font-semibold text-red-200">This exceeds the current holding.</p> : null}
+      </div>
+
+      <button type="submit" className={primaryButton} disabled={isPending || overdrawn || !assetId}>
+        Add transaction
+      </button>
+    </form>
+  );
+}
+
+function TradeInputs({
+  inputMode,
+  setInputMode,
+  quantity,
+  setQuantity,
+  grossAmount,
+  setGrossAmount,
+  unitPrice,
+  setUnitPrice,
+  computed,
+}: {
+  inputMode: "AMOUNT" | "QUANTITY";
+  setInputMode: (value: "AMOUNT" | "QUANTITY") => void;
+  quantity: string;
+  setQuantity: (value: string) => void;
+  grossAmount: string;
+  setGrossAmount: (value: string) => void;
+  unitPrice: string;
+  setUnitPrice?: (value: string) => void;
+  computed: { quantity: number; grossAmount: number };
+}) {
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-white/[0.012] p-4">
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button type="button" className={inputMode === "AMOUNT" ? primaryButton : ghostButton} onClick={() => setInputMode("AMOUNT")}>
+          By total amount
+        </button>
+        <button type="button" className={inputMode === "QUANTITY" ? primaryButton : ghostButton} onClick={() => setInputMode("QUANTITY")}>
+          By asset quantity
+        </button>
+      </div>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Field label="Unit price">
+          <input className={fieldClass} value={unitPrice} onChange={(event) => setUnitPrice?.(event.target.value)} placeholder="0.00" />
+        </Field>
+        <Field label="Quantity">
+          <input className={fieldClass} value={inputMode === "AMOUNT" ? formatInputNumber(computed.quantity) : quantity} onChange={(event) => setQuantity(event.target.value)} disabled={inputMode === "AMOUNT"} placeholder="0.00000000" />
+        </Field>
+        <Field label="Gross amount">
+          <input className={fieldClass} value={inputMode === "QUANTITY" ? formatInputNumber(computed.grossAmount) : grossAmount} onChange={(event) => setGrossAmount(event.target.value)} disabled={inputMode === "QUANTITY"} placeholder="0.00" />
+        </Field>
+      </div>
+    </div>
+  );
+}
+
+function SettingsForm({
+  data,
+  isPending,
+  onSubmit,
+}: {
+  data: PortfolioPageData;
+  isPending: boolean;
+  onSubmit: (payload: Record<string, unknown>) => void;
+}) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit({
+      displayCurrency: String(form.get("displayCurrency") ?? "USD"),
+      priceRefreshHours: String(form.get("priceRefreshHours") ?? "1"),
+      snapshotIntervalHours: String(form.get("snapshotIntervalHours") ?? "24"),
+    });
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={submit}>
+      <div className="grid gap-4 md:grid-cols-3">
+        <Field label="Display currency"><Select name="displayCurrency" options={currencyOptions} defaultValue={data.settings.displayCurrency} /></Field>
+        <Field label="Price refresh hours"><input name="priceRefreshHours" type="number" min="1" className={fieldClass} defaultValue={data.settings.priceRefreshHours} /></Field>
+        <Field label="Snapshot hours"><input name="snapshotIntervalHours" type="number" min="1" className={fieldClass} defaultValue={data.settings.snapshotIntervalHours} /></Field>
+      </div>
+      <button type="submit" className={primaryButton} disabled={isPending}>Save settings</button>
+    </form>
+  );
+}
+
+function CheckpointForm({
+  isPending,
+  onSubmit,
+}: {
+  isPending: boolean;
+  onSubmit: (note: string) => void;
+}) {
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    onSubmit(String(form.get("note") ?? ""));
+  }
+
+  return (
+    <form className="grid gap-4" onSubmit={submit}>
+      <Field label="Note"><textarea name="note" className={textAreaClass} placeholder="Optional checkpoint note" /></Field>
+      <button type="submit" className={primaryButton} disabled={isPending}>Create checkpoint</button>
+    </form>
+  );
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="grid gap-2">
+      <span className={labelClass}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function Select({
+  name,
+  options,
+  defaultValue,
+}: {
+  name: string;
+  options: readonly { value: string; label: string }[];
+  defaultValue: string;
+}) {
+  return (
+    <select name={name} className={selectClass} defaultValue={defaultValue}>
+      {options.map((option) => (
+        <option key={option.value} value={option.value}>{option.label}</option>
+      ))}
+    </select>
+  );
+}
+
+function modalTitle(modal: NonNullable<ModalState>) {
+  if (modal.type === "market") return modal.asset ? "Edit market asset" : "Add market asset";
+  if (modal.type === "manual") return modal.asset ? "Edit manual asset" : "Add manual asset";
+  if (modal.type === "liability") return modal.liability ? "Edit liability" : "Add liability";
+  if (modal.type === "transaction") return "Add transaction";
+  if (modal.type === "settings") return "Portfolio settings";
+  return "Create checkpoint";
+}
+
+function computeTrade(inputMode: "AMOUNT" | "QUANTITY", quantity: string, grossAmount: string, unitPrice: string) {
+  const price = Number(unitPrice);
+  const qty = Number(quantity);
+  const amount = Number(grossAmount);
+
+  if (!Number.isFinite(price) || price <= 0) {
+    return { quantity: 0, grossAmount: 0 };
+  }
+
+  if (inputMode === "AMOUNT") {
+    return {
+      quantity: Number.isFinite(amount) && amount > 0 ? amount / price : 0,
+      grossAmount: Number.isFinite(amount) && amount > 0 ? amount : 0,
+    };
+  }
+
+  return {
+    quantity: Number.isFinite(qty) && qty > 0 ? qty : 0,
+    grossAmount: Number.isFinite(qty) && qty > 0 ? qty * price : 0,
+  };
+}
+
+function quantityImpact(type: string, quantity: number) {
+  if (type === "SELL" || type === "TRANSFER_OUT") {
+    return -quantity;
+  }
+  return quantity;
+}
+
+function statusClass(status: string) {
+  if (status === "auto") return "border-emerald-300/25 text-emerald-100";
+  if (status === "stale") return "border-amber-300/25 text-amber-100";
+  if (status === "error") return "border-red-300/25 text-red-100";
+  return "border-white/10 text-zinc-300";
+}
+
+function changeTone(value: number | null) {
+  if (value === null) return "text-zinc-500";
+  if (value > 0) return "text-emerald-200";
+  if (value < 0) return "text-red-200";
+  return "text-zinc-400";
+}
+
+function formatMoney(value: number, currency: CurrencyCode) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    maximumFractionDigits: Math.abs(value) >= 1000 ? 0 : 2,
+  }).format(value);
+}
+
+function formatChange(value: number | null, percent: number | null, currency: CurrencyCode) {
+  return formatPeriodChange(value, percent, currency, "7d");
+}
+
+function formatPeriodChange(
+  value: number | null,
+  percent: number | null,
+  currency: CurrencyCode,
+  period: string,
+) {
+  if (value === null) return `No ${period} baseline`;
+  const sign = value > 0 ? "+" : "";
+  const pct = percent === null ? "" : ` / ${sign}${(percent * 100).toFixed(2)}%`;
+  return `${sign}${formatMoney(value, currency)}${pct} last ${period}`;
+}
+
+function formatQuantity(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: value >= 1 ? 4 : 8,
+  }).format(value);
+}
+
+function formatInputNumber(value: number) {
+  if (!value) return "";
+  return Number(value.toFixed(8)).toString();
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "n/a";
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}

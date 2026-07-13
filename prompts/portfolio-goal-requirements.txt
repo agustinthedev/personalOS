@@ -1,0 +1,840 @@
+Crear una nueva mini app llamada Portfolio dentro de Personal OS.
+
+Contexto del proyecto
+=====================
+
+Personal OS es una app Next.js con App Router, Prisma + SQLite, TypeScript y Tailwind. El proyecto está organizado como un conjunto de mini apps independientes que comparten infraestructura.
+
+Convenciones existentes:
+
+- Las rutas viven en src/app.
+- La lógica de dominio vive en src/features/<feature-name>.
+- La DB usa Prisma en prisma/schema.prisma.
+- El cliente Prisma compartido está en src/lib/db.ts.
+- Las mutaciones deben implementarse como server actions.
+- Las server actions deben validar inputs con zod.
+- Las rutas deben mantenerse delgadas e importar data/components desde src/features.
+- El diseño actual usa app-shell, soft-grid, panel, panel-muted, glass-button y liquid-text.
+
+La nueva mini app debe seguir esta estructura:
+
+- src/app/portfolio/page.tsx
+- src/features/portfolio/data.ts
+- src/features/portfolio/actions.ts
+- src/features/portfolio/types.ts
+- src/features/portfolio/services.ts
+- src/features/portfolio/components/
+
+También actualizar src/app/page.tsx para agregar Portfolio al dashboard principal.
+
+Objetivo del producto
+=====================
+
+Portfolio debe trackear inversiones, activos manuales, pasivos y net worth histórico.
+
+La app debe permitir:
+
+- Registrar activos de mercado, como crypto, acciones, ETFs, fondos y commodities/metales.
+- Registrar transacciones reales de compra, venta, transferencias y ajustes.
+- Calcular holdings actuales a partir de transacciones.
+- Actualizar precios de mercado automáticamente al cargar la página si están vencidos.
+- Registrar activos manuales como cash, propiedades, vehículos u otros bienes.
+- Registrar pasivos/deudas manuales.
+- Convertir todos los valores a una moneda de display seleccionable: USD o UYU.
+- Usar USD como moneda de display por defecto.
+- Obtener tipo de cambio USD/UYU automáticamente por API.
+- Calcular total assets, total liabilities y net worth.
+- Guardar snapshots históricos diarios para graficar la evolución.
+- Permitir checkpoints manuales con nota opcional.
+- Mostrar performance: costo promedio, P/L, allocation por categoría y cambios por período.
+
+Decisión clave de arquitectura
+==============================
+
+Los activos de mercado deben ser transaction-first.
+
+La cantidad actual de un activo como BTC, AAPL o VOO no debe ser la fuente de verdad editable principal. La fuente de verdad son sus transacciones.
+
+Ejemplo:
+
+- Si registro una compra de BTC, se suma cantidad.
+- Si registro una venta de BTC, se resta cantidad.
+- Si registro una transferencia o ajuste, se modifica cantidad según corresponda.
+
+Se puede guardar quantityHeld o currentTotalValue como cache en PortfolioAsset, pero deben recalcularse después de crear, editar o archivar transacciones.
+
+Modelo de costo y P/L
+=====================
+
+Usar weighted average cost para el MVP.
+
+No implementar FIFO en el MVP.
+
+La app debe calcular:
+
+- quantityHeld
+- averageCost
+- costBasis
+- marketValue
+- unrealizedGain
+- unrealizedGainPercent
+
+Reglas:
+
+- averageCost = costBasis / quantityHeld
+- marketValue = quantityHeld * currentUnitPrice
+- unrealizedGain = marketValue - costBasis
+- unrealizedGainPercent = unrealizedGain / costBasis
+
+El diseño de datos no debe impedir implementar FIFO en el futuro, pero no hay que construir FIFO ahora.
+
+Tipos de activos
+================
+
+Internamente, distinguir:
+
+- MARKET_ASSET
+- MANUAL_ASSET
+- LIABILITY
+
+Visualmente, no mostrar "manual assets" como categoría principal. Mostrar categorías útiles:
+
+- Crypto
+- Stocks
+- ETFs & Funds
+- Commodities
+- Cash
+- Real Estate
+- Vehicles
+- Other Assets
+- Liabilities
+
+Cash debe ser un activo manual con categoría visual Cash.
+
+Detalles como "emergency fund", "checking account", "cash wallet", "banco X" o "cuenta Y" deben ir en notes o accountNote, no como categoría separada.
+
+Símbolos
+========
+
+Los símbolos deben guardarse uppercase y trimmed.
+
+Crypto debe registrarse con símbolos simples:
+
+- BTC
+- ETH
+- SOL
+
+No usar pares como BTC-USD como input principal.
+
+Acciones, ETFs y fondos deben soportar símbolos USA/internacionales:
+
+- AAPL
+- MSFT
+- VOO
+- SPY
+
+Commodities deben prepararse para precio spot global:
+
+- XAU para oro
+- XAG para plata
+
+No limitar commodities a ETFs como GLD o SLV, aunque esos ETFs pueden funcionar como market assets normales si se registran como ETF.
+
+Monedas
+=======
+
+Soportar:
+
+- USD
+- UYU
+
+USD debe ser la moneda de display por defecto.
+
+El usuario debe poder registrar activos, transacciones y pasivos en USD o UYU.
+
+La pantalla debe convertir todos los valores a la moneda de display seleccionada.
+
+El tipo de cambio USD/UYU debe obtenerse automáticamente por API y cachearse en DB.
+
+La actualización del FX debe seguir una lógica similar a los precios de mercado:
+
+- Si no hay tipo de cambio guardado, buscarlo.
+- Si el último tipo de cambio está stale, buscarlo.
+- Si falla la API, usar el último tipo de cambio guardado y mostrar warning no bloqueante.
+
+Actualización automática al cargar /portfolio
+=============================================
+
+Al entrar a /portfolio, ejecutar una función tipo getPortfolioPageData().
+
+Esta función debe correr server-side, no desde el client directamente.
+
+Flujo esperado:
+
+1. Asegurar que existe PortfolioSettings.
+2. Leer activos, transacciones, pasivos, últimos precios, último FX y últimos snapshots.
+3. Detectar activos de mercado con autoPriceEnabled = true.
+4. Considerar precio stale si lastPriceUpdatedAt es null o si pasaron más de priceRefreshHours.
+5. Actualizar precios stale antes de devolver la data de pantalla.
+6. Actualizar tipo de cambio USD/UYU si está stale.
+7. Recalcular holdings desde transacciones.
+8. Convertir todos los valores a displayCurrency.
+9. Crear snapshot diario si el último snapshot automático tiene más de snapshotIntervalHours.
+10. Devolver page data ya lista para renderizar.
+
+No romper la pantalla si falla una API externa.
+
+Si una API falla:
+
+- Usar último precio guardado.
+- Marcar el asset o FX como stale/error.
+- Mostrar warning compacto.
+- Renderizar el portfolio igual.
+
+Prisma schema sugerido
+======================
+
+Agregar enums:
+
+enum Currency {
+  USD
+  UYU
+}
+
+enum PortfolioItemKind {
+  MARKET_ASSET
+  MANUAL_ASSET
+}
+
+enum MarketAssetType {
+  STOCK
+  ETF
+  FUND
+  CRYPTO
+  COMMODITY
+}
+
+enum ManualAssetType {
+  CASH
+  REAL_ESTATE
+  VEHICLE
+  COLLECTIBLE
+  OTHER
+}
+
+enum LiabilityType {
+  LOAN
+  CREDIT_CARD
+  MORTGAGE
+  PERSONAL_DEBT
+  OTHER
+}
+
+enum PriceProvider {
+  MANUAL
+  MARKET_API
+  FX_API
+}
+
+enum PortfolioTransactionType {
+  BUY
+  SELL
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+}
+
+enum SnapshotSource {
+  AUTO
+  MANUAL
+}
+
+Agregar modelos:
+
+model PortfolioSettings {
+  id                    String   @id @default(cuid())
+  displayCurrency       Currency @default(USD)
+  priceRefreshHours     Int      @default(1)
+  snapshotIntervalHours Int      @default(24)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model PortfolioAsset {
+  id                 String              @id @default(cuid())
+  name               String
+  symbol             String?
+  kind               PortfolioItemKind
+  marketType         MarketAssetType?
+  manualType         ManualAssetType?
+  currency           Currency
+  manualValue        Decimal?
+  quantityHeld       Decimal?            @default(0)
+  averageCost        Decimal?
+  costBasis          Decimal?
+  currentUnitPrice   Decimal?
+  currentTotalValue  Decimal             @default(0)
+  priceProvider      PriceProvider       @default(MANUAL)
+  autoPriceEnabled   Boolean             @default(false)
+  lastPriceUpdatedAt DateTime?
+  accountNote        String?
+  notes              String?
+  archivedAt         DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  transactions       PortfolioTransaction[]
+  priceSnapshots     AssetPriceSnapshot[]
+
+  @@index([kind])
+  @@index([marketType])
+  @@index([manualType])
+  @@index([symbol])
+  @@index([archivedAt])
+  @@index([lastPriceUpdatedAt])
+}
+
+model PortfolioTransaction {
+  id           String                   @id @default(cuid())
+  assetId      String
+  asset        PortfolioAsset           @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  type         PortfolioTransactionType
+  quantity     Decimal
+  unitPrice    Decimal?
+  grossAmount  Decimal?
+  fees         Decimal?                 @default(0)
+  currency     Currency
+  executedAt   DateTime
+  accountNote  String?
+  notes        String?
+  archivedAt   DateTime?
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  @@index([assetId, executedAt])
+  @@index([type])
+  @@index([archivedAt])
+}
+
+model PortfolioLiability {
+  id             String        @id @default(cuid())
+  name           String
+  type           LiabilityType @default(OTHER)
+  currency       Currency
+  currentBalance Decimal
+  accountNote    String?
+  notes          String?
+  archivedAt     DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([archivedAt])
+}
+
+model AssetPriceSnapshot {
+  id         String         @id @default(cuid())
+  assetId    String
+  asset      PortfolioAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  unitPrice  Decimal
+  currency   Currency
+  source     String
+  capturedAt DateTime       @default(now())
+
+  @@index([assetId, capturedAt])
+}
+
+model PortfolioSnapshot {
+  id               String         @id @default(cuid())
+  totalAssets      Decimal
+  totalLiabilities Decimal
+  netWorth         Decimal
+  currency         Currency
+  source           SnapshotSource @default(AUTO)
+  note             String?
+  capturedAt       DateTime       @default(now())
+
+  @@index([currency, capturedAt])
+  @@index([source, capturedAt])
+}
+
+model ExchangeRateSnapshot {
+  id         String   @id @default(cuid())
+  base       Currency
+  quote      Currency
+  rate       Decimal
+  source     String
+  capturedAt DateTime @default(now())
+
+  @@index([base, quote, capturedAt])
+}
+
+Transacciones
+=============
+
+La UI debe tener una acción principal para activos de mercado: Add transaction.
+
+Tipos mínimos:
+
+- BUY
+- SELL
+- TRANSFER_IN
+- TRANSFER_OUT
+- ADJUSTMENT
+
+BUY
+---
+
+Debe soportar dos modos de input:
+
+Modo by total amount:
+
+- User ingresa grossAmount, unitPrice, fees.
+- El sistema calcula quantity.
+
+Formula:
+
+quantity = grossAmount / unitPrice
+
+Fees aumentan cost basis.
+
+Modo by asset quantity:
+
+- User ingresa quantity, unitPrice, fees.
+- El sistema calcula grossAmount.
+
+Formula:
+
+grossAmount = quantity * unitPrice
+
+El unitPrice debe autocompletarse con el último precio de mercado si existe, pero siempre debe ser editable.
+
+SELL
+----
+
+Debe soportar dos modos de input:
+
+Modo by asset quantity:
+
+- User ingresa quantity, unitPrice, fees.
+- El sistema calcula grossAmount.
+
+Modo by total amount:
+
+- User ingresa grossAmount, unitPrice, fees.
+- El sistema calcula quantity.
+
+Fees reducen net proceeds.
+
+Bloquear ventas si quantity vendida excede quantityHeld actual.
+
+TRANSFER_IN / TRANSFER_OUT
+--------------------------
+
+Se usan para reflejar movimientos externos o correcciones de custodia.
+
+Deben afectar quantityHeld.
+
+No deben tratarse como profit/loss por defecto.
+
+ADJUSTMENT
+----------
+
+Se usa para correcciones manuales.
+
+Debe requerir notes.
+
+Debe afectar quantityHeld.
+
+Reglas de holdings
+==================
+
+Para cada asset de mercado:
+
+quantityHeld =
+  sum(BUY.quantity)
+  + sum(TRANSFER_IN.quantity)
+  - sum(SELL.quantity)
+  - sum(TRANSFER_OUT.quantity)
+  + sum(ADJUSTMENT.quantity)
+
+Si quantityHeld queda 0, el asset puede seguir visible hasta que el usuario lo archive manualmente.
+
+No archivar automáticamente assets en 0.
+
+Pasivos
+=======
+
+Para el MVP, pasivos son simples.
+
+Campos:
+
+- name
+- type
+- currency
+- currentBalance
+- accountNote
+- notes
+
+No implementar cuotas, vencimientos, calendario de pagos ni tasa de interés en MVP.
+
+El objetivo principal de pasivos es calcular net worth.
+
+Si currentBalance llega a 0, no archivar automáticamente. El usuario debe archivarlo manualmente.
+
+Archivo y borrado
+=================
+
+No hacer hard delete desde la UI.
+
+Assets, transactions y liabilities deben poder archivarse con archivedAt.
+
+Los elementos archivados no deben aparecer en la vista principal.
+
+Los elementos archivados deben mantenerse en DB para preservar historial.
+
+Snapshots históricos
+====================
+
+Crear snapshots automáticos diarios.
+
+Regla:
+
+- Al cargar /portfolio, si el último PortfolioSnapshot automático tiene más de snapshotIntervalHours, crear uno nuevo.
+- Por defecto snapshotIntervalHours = 24.
+
+También permitir snapshot manual:
+
+- Acción secundaria o poco prominente.
+- Label sugerido: Create checkpoint.
+- Debe permitir note opcional.
+- source = MANUAL.
+
+Los snapshots deben guardar:
+
+- totalAssets
+- totalLiabilities
+- netWorth
+- currency
+- source
+- note opcional
+- capturedAt
+
+Usar snapshots para mostrar cambio histórico.
+
+Performance y visualizaciones
+=============================
+
+La pantalla principal debe mostrar métricas superiores:
+
+- Total Assets
+- Total Liabilities
+- Net Worth
+- Liquid Assets o Cash
+
+Cada métrica principal debe mostrar cambio reciente cuando haya snapshots suficientes:
+
+- Cambio últimos 7 días.
+- Cambio últimos 30 días si hay data.
+
+Formato ejemplo:
+
+Net Worth
+$42,300
++$1,240 / +3.02% last 7 days
+
+Agregar visualizaciones:
+
+- Net worth over time.
+- Assets vs liabilities over time.
+- Allocation by category.
+- Allocation by currency.
+- Largest positions.
+- Unrealized gain/loss.
+
+No agregar una librería de charts nueva salvo que sea claramente necesario.
+
+Para MVP, usar CSS/HTML con barras, mini sparklines o layouts simples similares a los existentes en el dashboard.
+
+UI principal
+============
+
+La ruta /portfolio debe tener:
+
+- main con class app-shell min-h-screen text-zinc-50.
+- section con soft-grid.
+- max-w-7xl como las otras mini apps.
+- Header con:
+  - Link a Personal OS.
+  - Eyebrow Portfolio.
+  - H1 Net Worth con liquid-text.
+- Panel compacto de settings:
+  - Display currency: USD / UYU.
+  - Last price refresh.
+  - Last snapshot.
+- Métricas principales.
+- Sección de chart histórico.
+- Sección Market Assets.
+- Sección Other Assets / Cash.
+- Sección Liabilities.
+- Acciones principales:
+  - Add market asset.
+  - Add manual asset.
+  - Add liability.
+  - Refresh prices.
+- Acción secundaria:
+  - Create checkpoint.
+
+Cada asset debe mostrar:
+
+- Nombre.
+- Símbolo si aplica.
+- Categoría visual.
+- Cantidad held si es market asset.
+- Precio unitario actual si es market asset.
+- Valor en moneda original.
+- Valor convertido a display currency.
+- Average cost si es market asset.
+- Unrealized P/L si es market asset.
+- Última actualización de precio.
+- Estado: auto, manual, stale o error.
+- accountNote si existe, pero de forma poco prominente.
+- Botones edit, add transaction, archive.
+
+Cada liability debe mostrar:
+
+- Nombre.
+- Tipo.
+- Balance en moneda original.
+- Balance convertido a display currency.
+- accountNote si existe.
+- Botones edit y archive.
+
+Formularios
+===========
+
+Formulario Add/Edit Market Asset:
+
+- name
+- symbol
+- marketType: STOCK, ETF, FUND, CRYPTO, COMMODITY
+- currency
+- autoPriceEnabled
+- initialUnitPrice opcional
+- accountNote opcional
+- notes opcional
+
+Al crear un market asset, permitir opcionalmente crear una transacción inicial BUY en el mismo flujo.
+
+Formulario Add Transaction:
+
+- asset
+- transaction type
+- input mode: by total amount / by asset quantity
+- quantity
+- unitPrice
+- grossAmount
+- fees
+- currency
+- executedAt
+- accountNote opcional
+- notes opcional
+
+Reglas UI:
+
+- unitPrice se autocompleta con currentUnitPrice si existe.
+- unitPrice siempre es editable.
+- quantity o grossAmount se autocalculan según input mode.
+- Mostrar preview antes de guardar:
+  - Quantity impact.
+  - Estimated value.
+  - New holding.
+  - New average cost si aplica.
+- Bloquear SELL si excede quantityHeld.
+
+Formulario Add/Edit Manual Asset:
+
+- name
+- manualType: CASH, REAL_ESTATE, VEHICLE, COLLECTIBLE, OTHER
+- currency
+- manualValue
+- accountNote opcional
+- notes opcional
+
+Formulario Add/Edit Liability:
+
+- name
+- type
+- currency
+- currentBalance
+- accountNote opcional
+- notes opcional
+
+Formulario Settings:
+
+- displayCurrency
+- priceRefreshHours
+- snapshotIntervalHours
+
+Server actions
+==============
+
+Crear actions con zod:
+
+- createMarketAsset
+- updateMarketAsset
+- createManualAsset
+- updateManualAsset
+- archiveAsset
+- createPortfolioTransaction
+- updatePortfolioTransaction
+- archivePortfolioTransaction
+- createLiability
+- updateLiability
+- archiveLiability
+- updatePortfolioSettings
+- refreshPortfolioPrices
+- createPortfolioSnapshotNow
+
+Todas las actions deben:
+
+- Validar con zod.
+- Usar Prisma.
+- Recalcular asset/portfolio cuando corresponda.
+- Hacer revalidatePath("/portfolio").
+
+Servicios
+=========
+
+Implementar en src/features/portfolio/services.ts:
+
+- getMarketPrice(asset)
+- getCryptoPrice(symbol)
+- getStockOrFundPrice(symbol)
+- getCommoditySpotPrice(symbol)
+- getExchangeRate(base, quote)
+- refreshStalePrices(settings)
+- refreshStaleExchangeRates(settings)
+- recalculateAssetFromTransactions(assetId)
+- calculatePortfolioTotals(displayCurrency)
+- ensureFreshPortfolioSnapshot(settings)
+
+No poner lógica de providers dentro de componentes.
+
+Para el MVP, si no hay API key configurada o si el provider falla:
+
+- No romper.
+- Usar último valor cacheado.
+- Permitir precio manual.
+- Dejar warning en page data.
+
+Variables .env.example sugeridas
+================================
+
+MARKET_PRICE_API_KEY=
+MARKET_PRICE_API_BASE_URL=
+CRYPTO_PRICE_API_BASE_URL=
+COMMODITY_PRICE_API_BASE_URL=
+FX_RATE_API_BASE_URL=
+
+Empty states
+============
+
+Si no hay datos:
+
+- Renderizar /portfolio sin error.
+- Mostrar panel de bienvenida operativo, no landing page.
+- Mostrar acciones para crear primer activo, primer pasivo o primer asset de mercado.
+
+No usar textos largos explicativos en la UI.
+
+Errores y tolerancia
+====================
+
+La app debe tolerar:
+
+- API de precios caída.
+- API de FX caída.
+- Símbolo inválido.
+- Asset sin precio inicial.
+- Portfolio vacío.
+- Snapshot inexistente.
+- Tipo de cambio inexistente.
+
+En todos los casos, renderizar la página con mensajes compactos.
+
+Dashboard
+=========
+
+Actualizar src/app/page.tsx para incluir Portfolio en apps:
+
+name: Portfolio
+href: /portfolio
+status: Live
+metric: Net worth
+description: Track assets, liabilities, investments, and net worth over time.
+
+Si es razonable, mostrar alguna señal real del portfolio en dashboard, como net worth o cantidad de assets. Si no, dejarlo como link funcional.
+
+Criterios de aceptación
+=======================
+
+La implementación está completa cuando:
+
+- Prisma schema incluye los modelos y enums necesarios.
+- Existe migración válida.
+- npm run db:migrate funciona.
+- /portfolio carga sin datos y muestra empty state.
+- Portfolio aparece en el dashboard.
+- Se puede crear un manual asset en USD.
+- Se puede crear un manual asset en UYU.
+- Se puede crear un liability en USD o UYU.
+- Se puede crear un market asset.
+- Se puede registrar BUY para un market asset.
+- BUY permite ingresar total amount y autocalcular quantity.
+- BUY permite ingresar quantity y autocalcular grossAmount.
+- Unit price se autocompleta con último precio si existe y es editable.
+- Se puede registrar SELL.
+- SELL bloquea ventas mayores a quantityHeld.
+- Holdings se recalculan desde transacciones.
+- Se calcula averageCost con weighted average cost.
+- Se calcula unrealized P/L.
+- Se convierten totales entre USD y UYU según display currency.
+- FX USD/UYU se cachea en DB.
+- Refresh prices intenta actualizar activos automáticos.
+- Si refresh falla, la UI sigue funcionando con datos cacheados.
+- Se crea snapshot automático si pasó más de 24 horas.
+- Se puede crear checkpoint manual con nota opcional.
+- Archived assets/liabilities/transactions no aparecen en la vista principal.
+- No se borra data definitivamente desde UI.
+- npm run lint pasa.
+- npm run build pasa.
+
+Preferencias de UX
+==================
+
+- La app debe ser densa, útil y operativa desde el primer viewport.
+- No hacer landing page.
+- Usar diseño consistente con Board y Blog.
+- Usar paneles glass existentes.
+- Evitar textos largos explicativos dentro de la UI.
+- Priorizar acciones claras y formularios compactos.
+- Los controles de moneda deben ser segmentados USD / UYU.
+- Los formularios pueden ser modales o paneles inline, siguiendo el estilo de Board.
+- La acción Create checkpoint debe existir pero no ocupar el foco principal.
+
+Notas finales
+=============
+
+Priorizar una implementación robusta y local-first.
+
+No es necesario conectar providers perfectos de mercado si eso bloquea el MVP. La arquitectura debe dejar services.ts preparado para providers reales y la app debe funcionar con precios manuales/cacheados.
+
+La parte más importante del MVP es:
+
+- Modelo transaction-first.
+- Cálculo correcto de holdings.
+- Conversión USD/UYU.
+- Snapshots históricos.
+- UI consistente con Personal OS.
+
+El lenguaje de todo debe ser ingles, por mas de que yo te de instrucciones en espanol
