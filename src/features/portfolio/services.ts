@@ -80,7 +80,7 @@ async function fetchJsonPrice(url: string): Promise<number | null> {
   const response = await fetch(url, { next: { revalidate: 0 } });
 
   if (!response.ok) {
-    throw new Error(`Provider returned ${response.status}`);
+    throw new Error(providerStatusMessage(response.status));
   }
 
   const payload = (await response.json()) as Record<string, unknown>;
@@ -120,6 +120,14 @@ function isCoinGeckoSimplePriceUrl(baseUrl: string) {
   return baseUrl.includes("api.coingecko.com") && baseUrl.includes("/simple/price");
 }
 
+function providerStatusMessage(status: number) {
+  if (status === 429) {
+    return "Provider rate limit reached. Using cached prices for now.";
+  }
+
+  return `Provider returned ${status}`;
+}
+
 function readCoinGeckoUsdPrice(value: Record<string, unknown> | Record<string, unknown>[] | undefined) {
   if (Array.isArray(value)) {
     const pricedToken = value.find((item) => {
@@ -148,7 +156,7 @@ async function fetchCoinGeckoSimplePrice(baseUrl: string, symbol: string): Promi
   const response = await fetch(url, { next: { revalidate: 0 } });
 
   if (!response.ok) {
-    throw new Error(`Provider returned ${response.status}`);
+    throw new Error(providerStatusMessage(response.status));
   }
 
   const payload = (await response.json()) as Record<string, Record<string, unknown> | Record<string, unknown>[] | undefined>;
@@ -160,6 +168,66 @@ async function fetchCoinGeckoSimplePrice(baseUrl: string, symbol: string): Promi
   }
 
   return { price, currency: "USD", source: "COINGECKO" };
+}
+
+async function fetchCoinGeckoSimplePayload(url: URL) {
+  const response = await fetch(url, { next: { revalidate: 0 } });
+
+  if (!response.ok) {
+    throw new Error(providerStatusMessage(response.status));
+  }
+
+  return (await response.json()) as Record<
+    string,
+    Record<string, unknown> | Record<string, unknown>[] | undefined
+  >;
+}
+
+async function getCoinGeckoPricesBySymbol(symbols: string[]): Promise<Map<string, PriceResult>> {
+  const prices = new Map<string, PriceResult>();
+  const uniqueSymbols = [...new Set(symbols.map(normalizeSymbol).filter(Boolean))];
+  const mappedSymbols = uniqueSymbols.filter((symbol) => coinGeckoIdsBySymbol[symbol]);
+  const lookupSymbols = uniqueSymbols.filter((symbol) => !coinGeckoIdsBySymbol[symbol]);
+  const baseUrl = process.env.CRYPTO_PRICE_API_BASE_URL || defaultCryptoPriceApiBaseUrl;
+
+  if (!isCoinGeckoSimplePriceUrl(baseUrl)) {
+    return prices;
+  }
+
+  if (mappedSymbols.length > 0) {
+    const mappedUrl = new URL(baseUrl);
+    mappedUrl.searchParams.set(
+      "ids",
+      mappedSymbols.map((symbol) => coinGeckoIdsBySymbol[symbol]).join(","),
+    );
+    mappedUrl.searchParams.set("vs_currencies", "usd");
+
+    const payload = await fetchCoinGeckoSimplePayload(mappedUrl);
+    for (const symbol of mappedSymbols) {
+      const coinGeckoId = coinGeckoIdsBySymbol[symbol];
+      const price = readCoinGeckoUsdPrice(payload[coinGeckoId]);
+      if (Number.isFinite(price) && price > 0) {
+        prices.set(symbol, { price, currency: "USD", source: "COINGECKO" });
+      }
+    }
+  }
+
+  if (lookupSymbols.length > 0) {
+    const lookupUrl = new URL(baseUrl);
+    lookupUrl.searchParams.set("symbols", lookupSymbols.map((symbol) => symbol.toLowerCase()).join(","));
+    lookupUrl.searchParams.set("vs_currencies", "usd");
+    lookupUrl.searchParams.set("include_tokens", "top");
+
+    const payload = await fetchCoinGeckoSimplePayload(lookupUrl);
+    for (const symbol of lookupSymbols) {
+      const price = readCoinGeckoUsdPrice(payload[symbol.toLowerCase()]);
+      if (Number.isFinite(price) && price > 0) {
+        prices.set(symbol, { price, currency: "USD", source: "COINGECKO" });
+      }
+    }
+  }
+
+  return prices;
 }
 
 export async function getCryptoPrice(symbol: string): Promise<PriceResult> {
@@ -277,7 +345,7 @@ export async function getExchangeRate(
       const response = await fetch(url, { next: { revalidate: 0 } });
 
       if (!response.ok) {
-        throw new Error(`Provider returned ${response.status}`);
+        throw new Error(providerStatusMessage(response.status));
       }
 
       const payload = (await response.json()) as Record<string, unknown>;
@@ -373,13 +441,35 @@ export async function refreshStalePrices(settings: {
       autoPriceEnabled: true,
     },
   });
+  const staleAssets = assets.filter((asset) => hoursSince(asset.lastPriceUpdatedAt) > settings.priceRefreshHours);
+  const cryptoAssets = staleAssets.filter((asset) => asset.marketType === "CRYPTO");
+  const cryptoProviderBaseUrl = process.env.CRYPTO_PRICE_API_BASE_URL || defaultCryptoPriceApiBaseUrl;
+  const shouldBatchCrypto = isCoinGeckoSimplePriceUrl(cryptoProviderBaseUrl);
+  let batchedCryptoPrices = new Map<string, PriceResult>();
+  let batchedCryptoWarning: string | null = null;
 
-  for (const asset of assets) {
-    if (hoursSince(asset.lastPriceUpdatedAt) <= settings.priceRefreshHours) {
-      continue;
+  if (shouldBatchCrypto && cryptoAssets.length > 0) {
+    try {
+      batchedCryptoPrices = await getCoinGeckoPricesBySymbol(
+        cryptoAssets.map((asset) => asset.symbol ?? ""),
+      );
+    } catch (error) {
+      batchedCryptoWarning = error instanceof Error ? error.message : "Could not refresh crypto prices.";
+      warnings.push({ message: batchedCryptoWarning });
     }
+  }
 
-    const result = await getMarketPrice(asset);
+  for (const asset of staleAssets) {
+    const symbol = normalizeSymbol(asset.symbol);
+    const result =
+      shouldBatchCrypto && asset.marketType === "CRYPTO"
+        ? batchedCryptoPrices.get(symbol) ?? {
+            price: null,
+            currency: "USD" as CurrencyCode,
+            source: "cache",
+            warning: batchedCryptoWarning ? undefined : `Could not refresh ${symbol}: cached price kept.`,
+          }
+        : await getMarketPrice(asset);
 
     if (result.price && result.price > 0) {
       await prisma.$transaction([
