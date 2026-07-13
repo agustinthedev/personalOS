@@ -607,7 +607,12 @@ function SimulationLab({ data }: { data: PortfolioPageData }) {
   const [includeGrowth, setIncludeGrowth] = useState(true);
   const [includeIncome, setIncludeIncome] = useState(true);
   const [includePayoff, setIncludePayoff] = useState(true);
+  const [includePersonalCashflow, setIncludePersonalCashflow] = useState(true);
   const [growthAdjustment, setGrowthAdjustment] = useState(0);
+  const [monthlyIncome, setMonthlyIncome] = useState("");
+  const [monthlyCosts, setMonthlyCosts] = useState("");
+  const personalMonthlyIncome = parseOptionalNumber(monthlyIncome);
+  const personalMonthlyCosts = parseOptionalNumber(monthlyCosts);
   const simulation = useMemo(
     () =>
       buildSimulation({
@@ -617,11 +622,26 @@ function SimulationLab({ data }: { data: PortfolioPageData }) {
         includeGrowth,
         includeIncome,
         includePayoff,
+        includePersonalCashflow,
         growthAdjustment,
+        personalMonthlyIncome,
+        personalMonthlyCosts,
       }),
-    [category, data, growthAdjustment, horizonMonths, includeGrowth, includeIncome, includePayoff],
+    [
+      category,
+      data,
+      growthAdjustment,
+      horizonMonths,
+      includeGrowth,
+      includeIncome,
+      includePayoff,
+      includePersonalCashflow,
+      personalMonthlyCosts,
+      personalMonthlyIncome,
+    ],
   );
   const finalPoint = simulation.points.at(-1) ?? simulation.points[0];
+  const netMonthlyCashflow = personalMonthlyIncome - personalMonthlyCosts;
 
   return (
     <section className="panel mt-5 rounded-[28px] p-5">
@@ -680,10 +700,41 @@ function SimulationLab({ data }: { data: PortfolioPageData }) {
                 onChange={(event) => setGrowthAdjustment(Number(event.target.value))}
               />
             </Field>
+            <Field label="Monthly income">
+              <input
+                className={fieldClass}
+                type="number"
+                min="0"
+                step="50"
+                value={monthlyIncome}
+                onChange={(event) => setMonthlyIncome(event.target.value)}
+                placeholder="0"
+              />
+            </Field>
+            <Field label="Monthly costs">
+              <input
+                className={fieldClass}
+                type="number"
+                min="0"
+                step="50"
+                value={monthlyCosts}
+                onChange={(event) => setMonthlyCosts(event.target.value)}
+                placeholder="0"
+              />
+            </Field>
+            <div className="rounded-[18px] border border-white/10 bg-white/[0.012] px-3 py-2 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-zinc-500">Net monthly cashflow</span>
+                <span className={`font-mono ${changeTone(netMonthlyCashflow)}`}>
+                  {formatMoney(netMonthlyCashflow, data.settings.displayCurrency)}
+                </span>
+              </div>
+            </div>
             <div className="grid gap-2">
               <ToggleRow checked={includeGrowth} label="Use asset growth" onChange={setIncludeGrowth} />
               <ToggleRow checked={includeIncome} label="Use asset income" onChange={setIncludeIncome} />
               <ToggleRow checked={includePayoff} label="Use liability payoff" onChange={setIncludePayoff} />
+              <ToggleRow checked={includePersonalCashflow} label="Use personal cashflow" onChange={setIncludePersonalCashflow} />
             </div>
           </div>
         </aside>
@@ -743,6 +794,7 @@ type SimulationPoint = {
   liabilities: number;
   netWorth: number;
   projectedIncome: number;
+  personalCashflow: number;
 };
 
 type ScenarioSeries = {
@@ -823,6 +875,11 @@ function ScenarioLineChart({
                   <span className="mt-1 block whitespace-nowrap">Net {formatMoney(point.netWorth, currency)}</span>
                   <span className="mt-1 block whitespace-nowrap text-zinc-500">Assets {formatMoney(point.assets, currency)}</span>
                   <span className="block whitespace-nowrap text-zinc-500">Liabilities {formatMoney(point.liabilities, currency)}</span>
+                  {point.personalCashflow !== 0 ? (
+                    <span className="block whitespace-nowrap text-zinc-500">
+                      Cashflow {formatMoney(point.personalCashflow, currency)}
+                    </span>
+                  ) : null}
                 </span>
               </div>
             );
@@ -915,7 +972,10 @@ function buildSimulation({
   includeGrowth,
   includeIncome,
   includePayoff,
+  includePersonalCashflow,
   growthAdjustment,
+  personalMonthlyIncome,
+  personalMonthlyCosts,
 }: {
   data: PortfolioPageData;
   category: string;
@@ -923,7 +983,10 @@ function buildSimulation({
   includeGrowth: boolean;
   includeIncome: boolean;
   includePayoff: boolean;
+  includePersonalCashflow: boolean;
   growthAdjustment: number;
+  personalMonthlyIncome: number;
+  personalMonthlyCosts: number;
 }) {
   const allAssets = [...data.marketAssets, ...data.manualAssets];
   const selectedAssets =
@@ -936,6 +999,7 @@ function buildSimulation({
   if (!months.includes(horizonMonths)) {
     months.push(horizonMonths);
   }
+  const monthlyPersonalNet = includePersonalCashflow ? personalMonthlyIncome - personalMonthlyCosts : 0;
   const points = months.map((month) => {
     const simulatedAssets = selectedAssets.reduce((sum, asset) => {
       const annualGrowth = includeGrowth
@@ -961,7 +1025,8 @@ function buildSimulation({
       const remainingRatio = Math.max(0, 1 - month / liability.payoffMonths);
       return sum + liability.displayBalance * remainingRatio;
     }, 0);
-    const assets = simulatedAssets + projectedIncome;
+    const personalCashflow = monthlyPersonalNet * month;
+    const assets = simulatedAssets + projectedIncome + personalCashflow;
 
     return {
       month,
@@ -969,6 +1034,7 @@ function buildSimulation({
       assets,
       liabilities,
       projectedIncome,
+      personalCashflow,
       netWorth: assets - liabilities,
     };
   });
@@ -1025,11 +1091,12 @@ function AssetSection({
       </div>
       <div className="space-y-3">
         {assets.length > 0 ? (
-          assets.map((asset) => (
-            <article key={asset.id} className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
-              <div className="flex flex-wrap items-start justify-between gap-4">
+          assets.map((asset, index) => (
+            <details key={asset.id} className="group rounded-[24px] border border-white/10 bg-white/[0.014] p-4" open={index === 0}>
+              <summary className="flex cursor-pointer list-none flex-wrap items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-sm text-zinc-500 transition group-open:rotate-90">&gt;</span>
                     <h3 className="text-lg font-semibold text-zinc-50">{asset.name}</h3>
                     {asset.symbol ? <span className="font-mono text-xs text-zinc-400">{asset.symbol}</span> : null}
                     <span className="rounded-full border border-white/10 px-2 py-1 text-xs text-zinc-300">
@@ -1049,7 +1116,6 @@ function AssetSection({
                       </span>
                     ) : null}
                   </div>
-                  {asset.accountNote ? <p className="mt-2 text-sm text-zinc-500">{asset.accountNote}</p> : null}
                 </div>
                 <div className="text-right">
                   <p className="font-mono text-xl font-semibold text-zinc-50">
@@ -1059,7 +1125,9 @@ function AssetSection({
                     {formatMoney(asset.currentTotalValue, asset.currency)}
                   </p>
                 </div>
-              </div>
+              </summary>
+
+              {asset.accountNote ? <p className="mt-4 text-sm text-zinc-500">{asset.accountNote}</p> : null}
 
               {asset.kind === "MARKET_ASSET" ? (
                 <div className="mt-4 grid gap-3 text-sm sm:grid-cols-4">
@@ -1121,7 +1189,7 @@ function AssetSection({
                     {asset.transactions.slice(0, 4).map((transaction) => (
                       <div key={transaction.id} className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-300">
                         <span>
-                          {transaction.type.replace("_", " ")} · {formatQuantity(transaction.quantity)} ·{" "}
+                          {transaction.type.replace("_", " ")} | {formatQuantity(transaction.quantity)} |{" "}
                           {transaction.grossAmount ? formatMoney(transaction.grossAmount, transaction.currency) : "no amount"}
                         </span>
                         <button type="button" className="text-xs font-semibold text-zinc-500 hover:text-zinc-50" onClick={() => onArchiveTransaction(transaction.id)}>
@@ -1146,7 +1214,7 @@ function AssetSection({
                   Archive
                 </button>
               </div>
-            </article>
+            </details>
           ))
         ) : (
           <p className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4 text-sm text-zinc-500">
@@ -1173,15 +1241,18 @@ function LiabilitySection({
       <h2 className="mt-2 text-xl font-semibold text-zinc-50">{liabilities.length} open balances</h2>
       <div className="mt-5 space-y-3">
         {liabilities.length > 0 ? (
-          liabilities.map((liability) => (
-            <article key={liability.id} className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
-              <div className="flex items-start justify-between gap-4">
+          liabilities.map((liability, index) => (
+            <details key={liability.id} className="group rounded-[24px] border border-white/10 bg-white/[0.014] p-4" open={index === 0}>
+              <summary className="flex cursor-pointer list-none items-start justify-between gap-4 [&::-webkit-details-marker]:hidden">
                 <div>
-                  <h3 className="text-lg font-semibold text-zinc-50">{liability.name}</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-sm text-zinc-500 transition group-open:rotate-90">&gt;</span>
+                    <h3 className="text-lg font-semibold text-zinc-50">{liability.name}</h3>
+                  </div>
                   <p className="mt-1 text-sm text-zinc-500">
                     {liability.type.replace("_", " ")}
-                    {liability.accountNote ? ` · ${liability.accountNote}` : ""}
-                    {liability.payoffMonths ? ` · paid in ${liability.payoffMonths}m` : ""}
+                    {liability.accountNote ? ` | ${liability.accountNote}` : ""}
+                    {liability.payoffMonths ? ` | paid in ${liability.payoffMonths}m` : ""}
                   </p>
                 </div>
                 <div className="text-right">
@@ -1192,7 +1263,7 @@ function LiabilitySection({
                     {formatMoney(liability.currentBalance, liability.currency)}
                   </p>
                 </div>
-              </div>
+              </summary>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button type="button" className={ghostButton} onClick={() => onEdit(liability)}>
                   Edit
@@ -1201,7 +1272,7 @@ function LiabilitySection({
                   Archive
                 </button>
               </div>
-            </article>
+            </details>
           ))
         ) : (
           <p className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4 text-sm text-zinc-500">
@@ -1705,6 +1776,11 @@ function quantityImpact(type: string, quantity: number) {
     return -quantity;
   }
   return quantity;
+}
+
+function parseOptionalNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 }
 
 function statusClass(status: string) {
