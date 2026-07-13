@@ -54,7 +54,7 @@ COMMODITY_PRICE_API_BASE_URL=""
 FX_RATE_API_BASE_URL="https://open.er-api.com/v6/latest"
 ```
 
-`CRYPTO_PRICE_API_BASE_URL` uses CoinGecko's Simple Price endpoint by default for common crypto symbols. `FX_RATE_API_BASE_URL` uses ExchangeRate-API's open endpoint by default. If no live FX provider or cached rate is available, Portfolio falls back to a local USD/UYU rate so the app remains usable.
+`CRYPTO_PRICE_API_BASE_URL` uses CoinGecko's Simple Price endpoint by default. Portfolio uses explicit CoinGecko IDs for common symbols and falls back to CoinGecko symbol lookup for new crypto symbols. If a symbol is ambiguous, CoinGecko's top-ranked token is used. `FX_RATE_API_BASE_URL` uses ExchangeRate-API's open endpoint by default. If no live FX provider or cached rate is available, Portfolio falls back to a local USD/UYU rate so the app remains usable.
 
 ## Project Structure
 

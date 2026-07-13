@@ -120,21 +120,30 @@ function isCoinGeckoSimplePriceUrl(baseUrl: string) {
   return baseUrl.includes("api.coingecko.com") && baseUrl.includes("/simple/price");
 }
 
-async function fetchCoinGeckoSimplePrice(baseUrl: string, symbol: string): Promise<PriceResult> {
-  const coinGeckoId = coinGeckoIdsBySymbol[symbol];
+function readCoinGeckoUsdPrice(value: Record<string, unknown> | Record<string, unknown>[] | undefined) {
+  if (Array.isArray(value)) {
+    const pricedToken = value.find((item) => {
+      const price = Number(item.usd);
+      return Number.isFinite(price) && price > 0;
+    });
 
-  if (!coinGeckoId) {
-    return {
-      price: null,
-      currency: "USD",
-      source: "cache",
-      warning: `No CoinGecko id mapping configured for ${symbol}.`,
-    };
+    return Number(pricedToken?.usd ?? null);
   }
 
+  return Number(value?.usd ?? null);
+}
+
+async function fetchCoinGeckoSimplePrice(baseUrl: string, symbol: string): Promise<PriceResult> {
+  const coinGeckoId = coinGeckoIdsBySymbol[symbol];
   const url = new URL(baseUrl);
-  url.searchParams.set("ids", coinGeckoId);
   url.searchParams.set("vs_currencies", "usd");
+
+  if (coinGeckoId) {
+    url.searchParams.set("ids", coinGeckoId);
+  } else {
+    url.searchParams.set("symbols", symbol.toLowerCase());
+    url.searchParams.set("include_tokens", "top");
+  }
 
   const response = await fetch(url, { next: { revalidate: 0 } });
 
@@ -142,8 +151,9 @@ async function fetchCoinGeckoSimplePrice(baseUrl: string, symbol: string): Promi
     throw new Error(`Provider returned ${response.status}`);
   }
 
-  const payload = (await response.json()) as Record<string, Record<string, unknown> | undefined>;
-  const price = Number(payload[coinGeckoId]?.usd);
+  const payload = (await response.json()) as Record<string, Record<string, unknown> | Record<string, unknown>[] | undefined>;
+  const payloadKey = coinGeckoId ?? symbol.toLowerCase();
+  const price = readCoinGeckoUsdPrice(payload[payloadKey]);
 
   if (!Number.isFinite(price) || price <= 0) {
     throw new Error("Provider response did not include a usable USD price");

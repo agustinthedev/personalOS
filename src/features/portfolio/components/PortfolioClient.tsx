@@ -842,21 +842,25 @@ function ScenarioBarChart({
   points: SimulationPoint[];
   title: string;
 }) {
-  const maxIncome = Math.max(...points.map((point) => point.projectedIncome), 1);
-  const hasIncome = points.some((point) => point.projectedIncome > 0);
+  const barPoints = points.filter((point) => point.month > 0);
+  const maxIncome = Math.max(...barPoints.map((point) => point.projectedIncome), 1);
+  const hasIncome = barPoints.some((point) => point.projectedIncome > 0);
 
   return (
     <article className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">{title}</h3>
-      <div className="bar-grid flex h-60 items-end gap-2 rounded-[20px] border border-white/10 bg-black/10 p-4">
+      <div
+        className="bar-grid grid h-60 overflow-hidden rounded-[20px] border border-white/10 bg-black/10 p-4"
+        style={{ gridTemplateColumns: hasIncome ? `repeat(${barPoints.length}, minmax(0, 1fr))` : undefined }}
+      >
         {hasIncome ? (
-          points.filter((point) => point.month > 0).map((point) => (
-            <div key={point.month} className="group relative flex h-full flex-1 flex-col items-center justify-end gap-2">
+          barPoints.map((point) => (
+            <div key={point.month} className="group relative flex min-w-0 flex-col items-center justify-end gap-2 px-0.5">
               <div
-                className="min-h-1 w-full rounded-t bg-emerald-200/75 transition group-hover:bg-emerald-100"
+                className="min-h-1 w-full max-w-5 rounded-t bg-emerald-200/75 transition group-hover:bg-emerald-100"
                 style={{ height: `${Math.max(4, (point.projectedIncome / maxIncome) * 100)}%` }}
               />
-              <span className="font-mono text-[10px] text-zinc-500">{point.label}</span>
+              <span className="max-w-full truncate font-mono text-[10px] text-zinc-500">{point.label}</span>
               <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100">
                 {formatMoney(point.projectedIncome, currency)}
               </span>
@@ -892,9 +896,7 @@ function buildSimulation({
   const allAssets = [...data.marketAssets, ...data.manualAssets];
   const selectedAssets =
     category === "All" ? allAssets : allAssets.filter((asset) => asset.visualCategory === category);
-  const baseAssets = allAssets.reduce((sum, asset) => sum + asset.displayValue, 0);
-  const simulatedBaseAssets = selectedAssets.reduce((sum, asset) => sum + asset.displayValue, 0);
-  const untouchedAssets = baseAssets - simulatedBaseAssets;
+  const baseAssets = selectedAssets.reduce((sum, asset) => sum + asset.displayValue, 0);
   const currentLiabilities = data.liabilities.reduce((sum, liability) => sum + liability.displayBalance, 0);
   const months = Array.from({ length: Math.floor(horizonMonths / 6) + 1 }, (_, index) => index * 6)
     .filter((month) => month <= horizonMonths);
@@ -926,7 +928,7 @@ function buildSimulation({
       const remainingRatio = Math.max(0, 1 - month / liability.payoffMonths);
       return sum + liability.displayBalance * remainingRatio;
     }, 0);
-    const assets = untouchedAssets + simulatedAssets + projectedIncome;
+    const assets = simulatedAssets + projectedIncome;
 
     return {
       month,
