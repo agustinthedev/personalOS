@@ -521,11 +521,10 @@ export async function updatePortfolioSettings(
 
 export async function refreshPortfolioPrices(): Promise<PortfolioActionResult> {
   try {
-    const settings = await ensurePortfolioSettings();
+    await ensurePortfolioSettings();
     await refreshStaleExchangeRates({ priceRefreshHours: 0 });
     await refreshStalePrices({ priceRefreshHours: 0 });
     await recalculateAllActiveAssets();
-    await createManualPortfolioSnapshot(settings.displayCurrency as CurrencyCode, "Manual refresh");
 
     revalidatePath(portfolioPath);
     return { ok: true };
