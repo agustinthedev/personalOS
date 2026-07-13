@@ -200,6 +200,8 @@ export function PortfolioClient({ initialData }: { initialData: PortfolioPageDat
         />
       </section>
 
+      <SimulationLab data={data} />
+
       {modal ? (
         <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-8 backdrop-blur-sm">
           <div className="panel w-full max-w-3xl rounded-[28px] p-5">
@@ -589,6 +591,369 @@ function ProjectionInputRow({ label, value }: { label: string; value: string }) 
       <span className="font-mono text-zinc-100">{value}</span>
     </div>
   );
+}
+
+function SimulationLab({ data }: { data: PortfolioPageData }) {
+  const allAssets = useMemo(
+    () => [...data.marketAssets, ...data.manualAssets],
+    [data.marketAssets, data.manualAssets],
+  );
+  const categoryOptions = useMemo(
+    () => ["All", ...Array.from(new Set(allAssets.map((asset) => asset.visualCategory))).sort()],
+    [allAssets],
+  );
+  const [horizonMonths, setHorizonMonths] = useState(60);
+  const [category, setCategory] = useState("All");
+  const [includeGrowth, setIncludeGrowth] = useState(true);
+  const [includeIncome, setIncludeIncome] = useState(true);
+  const [includePayoff, setIncludePayoff] = useState(true);
+  const [growthAdjustment, setGrowthAdjustment] = useState(0);
+  const simulation = useMemo(
+    () =>
+      buildSimulation({
+        data,
+        category,
+        horizonMonths,
+        includeGrowth,
+        includeIncome,
+        includePayoff,
+        growthAdjustment,
+      }),
+    [category, data, growthAdjustment, horizonMonths, includeGrowth, includeIncome, includePayoff],
+  );
+  const finalPoint = simulation.points.at(-1) ?? simulation.points[0];
+
+  return (
+    <section className="panel mt-5 rounded-[28px] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
+            Projection Lab
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-zinc-50">Scenario simulator</h2>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-2xl font-semibold text-zinc-50">
+            {formatMoney(finalPoint.netWorth, data.settings.displayCurrency)}
+          </p>
+          <p className={`mt-1 text-sm ${changeTone(finalPoint.netWorth - simulation.currentNetWorth)}`}>
+            {formatMoney(finalPoint.netWorth - simulation.currentNetWorth, data.settings.displayCurrency)} delta
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 xl:grid-cols-[320px_1fr]">
+        <aside className="rounded-[24px] border border-white/10 bg-black/10 p-4">
+          <div className="grid gap-4">
+            <Field label="Horizon">
+              <select
+                className={selectClass}
+                value={horizonMonths}
+                onChange={(event) => setHorizonMonths(Number(event.target.value))}
+              >
+                {[12, 24, 36, 60, 120].map((months) => (
+                  <option key={months} value={months}>
+                    {months} months
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Asset category">
+              <select
+                className={selectClass}
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+              >
+                {categoryOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Growth shock">
+              <input
+                className={fieldClass}
+                type="number"
+                step="0.25"
+                value={growthAdjustment}
+                onChange={(event) => setGrowthAdjustment(Number(event.target.value))}
+              />
+            </Field>
+            <div className="grid gap-2">
+              <ToggleRow checked={includeGrowth} label="Use asset growth" onChange={setIncludeGrowth} />
+              <ToggleRow checked={includeIncome} label="Use asset income" onChange={setIncludeIncome} />
+              <ToggleRow checked={includePayoff} label="Use liability payoff" onChange={setIncludePayoff} />
+            </div>
+          </div>
+        </aside>
+
+        <div className="grid gap-4">
+          <ScenarioLineChart
+            currency={data.settings.displayCurrency}
+            points={simulation.points}
+            series={[
+              { key: "netWorth", label: "Net worth", color: "rgba(186,230,253,0.95)" },
+            ]}
+            title="Projected net worth"
+          />
+          <div className="grid gap-4 xl:grid-cols-2">
+            <ScenarioLineChart
+              currency={data.settings.displayCurrency}
+              points={simulation.points}
+              series={[
+                { key: "assets", label: "Assets", color: "rgba(167,243,208,0.9)" },
+                { key: "liabilities", label: "Liabilities", color: "rgba(252,165,165,0.85)" },
+              ]}
+              title="Assets vs liabilities"
+            />
+            <ScenarioBarChart
+              currency={data.settings.displayCurrency}
+              points={simulation.points}
+              title="Cumulative projected income"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ToggleRow({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-center justify-between gap-3 rounded-[18px] border border-white/10 bg-white/[0.012] px-3 py-2 text-sm text-zinc-300">
+      <span>{label}</span>
+      <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
+    </label>
+  );
+}
+
+type SimulationPoint = {
+  month: number;
+  label: string;
+  assets: number;
+  liabilities: number;
+  netWorth: number;
+  projectedIncome: number;
+};
+
+type ScenarioSeries = {
+  key: "assets" | "liabilities" | "netWorth";
+  label: string;
+  color: string;
+};
+
+function ScenarioLineChart({
+  currency,
+  points,
+  series,
+  title,
+}: {
+  currency: CurrencyCode;
+  points: SimulationPoint[];
+  series: ScenarioSeries[];
+  title: string;
+}) {
+  const values = series.flatMap((item) => points.map((point) => point[item.key]));
+  const min = Math.min(...values, 0);
+  const max = Math.max(...values, 1);
+  const range = max - min || Math.max(Math.abs(max), 1);
+  const xStep = points.length > 1 ? 100 / (points.length - 1) : 0;
+
+  return (
+    <article className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">{title}</h3>
+        <div className="flex flex-wrap gap-3 text-xs text-zinc-500">
+          {series.map((item) => (
+            <span key={item.key} className="inline-flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full" style={{ background: item.color }} />
+              {item.label}
+            </span>
+          ))}
+        </div>
+      </div>
+      <div className="bar-grid relative h-60 rounded-[20px] border border-white/10 bg-black/10 p-4">
+        <svg className="h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+          {series.map((item) => {
+            const path = points
+              .map((point, index) => {
+                const x = points.length > 1 ? index * xStep : 50;
+                const y = 88 - ((point[item.key] - min) / range) * 68;
+                return `${index === 0 ? "M" : "L"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+              })
+              .join(" ");
+
+            return (
+              <path
+                key={item.key}
+                d={path}
+                fill="none"
+                stroke={item.color}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.8"
+                vectorEffect="non-scaling-stroke"
+              />
+            );
+          })}
+        </svg>
+        <div className="pointer-events-none absolute inset-4">
+          {points.map((point, index) => {
+            const x = points.length > 1 ? index * xStep : 50;
+            const y = 88 - ((point.netWorth - min) / range) * 68;
+
+            return (
+              <div
+                key={point.month}
+                className="group pointer-events-auto absolute h-6 w-6 -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${x}%`, top: `${y}%` }}
+              >
+                <span className="absolute left-1/2 top-1/2 block h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white ring-2 ring-black/45 transition group-hover:scale-125" />
+                <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100">
+                  <span className="block whitespace-nowrap font-semibold">{point.label}</span>
+                  <span className="mt-1 block whitespace-nowrap">Net {formatMoney(point.netWorth, currency)}</span>
+                  <span className="mt-1 block whitespace-nowrap text-zinc-500">Assets {formatMoney(point.assets, currency)}</span>
+                  <span className="block whitespace-nowrap text-zinc-500">Liabilities {formatMoney(point.liabilities, currency)}</span>
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function ScenarioBarChart({
+  currency,
+  points,
+  title,
+}: {
+  currency: CurrencyCode;
+  points: SimulationPoint[];
+  title: string;
+}) {
+  const maxIncome = Math.max(...points.map((point) => point.projectedIncome), 1);
+
+  return (
+    <article className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
+      <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">{title}</h3>
+      <div className="bar-grid flex h-60 items-end gap-2 rounded-[20px] border border-white/10 bg-black/10 p-4">
+        {points.filter((point) => point.month > 0).map((point) => (
+          <div key={point.month} className="group relative flex flex-1 flex-col items-center justify-end gap-2">
+            <div
+              className="w-full rounded-t bg-emerald-200/75 transition group-hover:bg-emerald-100"
+              style={{ height: `${Math.max(4, (point.projectedIncome / maxIncome) * 100)}%` }}
+            />
+            <span className="font-mono text-[10px] text-zinc-500">{point.label}</span>
+            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100">
+              {formatMoney(point.projectedIncome, currency)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function buildSimulation({
+  data,
+  category,
+  horizonMonths,
+  includeGrowth,
+  includeIncome,
+  includePayoff,
+  growthAdjustment,
+}: {
+  data: PortfolioPageData;
+  category: string;
+  horizonMonths: number;
+  includeGrowth: boolean;
+  includeIncome: boolean;
+  includePayoff: boolean;
+  growthAdjustment: number;
+}) {
+  const allAssets = [...data.marketAssets, ...data.manualAssets];
+  const selectedAssets =
+    category === "All" ? allAssets : allAssets.filter((asset) => asset.visualCategory === category);
+  const baseAssets = allAssets.reduce((sum, asset) => sum + asset.displayValue, 0);
+  const simulatedBaseAssets = selectedAssets.reduce((sum, asset) => sum + asset.displayValue, 0);
+  const untouchedAssets = baseAssets - simulatedBaseAssets;
+  const currentLiabilities = data.liabilities.reduce((sum, liability) => sum + liability.displayBalance, 0);
+  const months = Array.from({ length: Math.floor(horizonMonths / 6) + 1 }, (_, index) => index * 6)
+    .filter((month) => month <= horizonMonths);
+  if (!months.includes(horizonMonths)) {
+    months.push(horizonMonths);
+  }
+  const points = months.map((month) => {
+    const simulatedAssets = selectedAssets.reduce((sum, asset) => {
+      const annualGrowth = includeGrowth
+        ? ((asset.expectedAnnualGrowthPercent ?? 0) + growthAdjustment) / 100
+        : 0;
+      const monthlyGrowth = annualGrowth === 0 ? 0 : Math.pow(1 + annualGrowth, 1 / 12) - 1;
+      const activeMonths = getSimulationActiveMonths(asset.maturityDate, month);
+      return sum + asset.displayValue * Math.pow(1 + monthlyGrowth, activeMonths);
+    }, 0);
+    const projectedIncome = includeIncome
+      ? selectedAssets.reduce((sum, asset) => {
+          if (!asset.isIncomeProducing || !asset.displayMonthlyIncome) {
+            return sum;
+          }
+          return sum + asset.displayMonthlyIncome * getSimulationActiveMonths(asset.maturityDate, month);
+        }, 0)
+      : 0;
+    const liabilities = data.liabilities.reduce((sum, liability) => {
+      if (!includePayoff || !liability.payoffMonths || liability.payoffMonths <= 0) {
+        return sum + liability.displayBalance;
+      }
+
+      const remainingRatio = Math.max(0, 1 - month / liability.payoffMonths);
+      return sum + liability.displayBalance * remainingRatio;
+    }, 0);
+    const assets = untouchedAssets + simulatedAssets + projectedIncome;
+
+    return {
+      month,
+      label: month === 0 ? "Now" : `${month}m`,
+      assets,
+      liabilities,
+      projectedIncome,
+      netWorth: assets - liabilities,
+    };
+  });
+
+  return {
+    currentNetWorth: baseAssets - currentLiabilities,
+    points,
+  };
+}
+
+function getSimulationActiveMonths(maturityDate: string | null, projectedMonth: number) {
+  if (!maturityDate) {
+    return projectedMonth;
+  }
+
+  const now = new Date();
+  const maturity = new Date(`${maturityDate}T00:00:00`);
+  if (Number.isNaN(maturity.getTime()) || maturity <= now) {
+    return 0;
+  }
+
+  const monthsUntilMaturity =
+    (maturity.getFullYear() - now.getFullYear()) * 12 +
+    (maturity.getMonth() - now.getMonth()) +
+    (maturity.getDate() >= now.getDate() ? 0 : -1);
+
+  return Math.max(0, Math.min(projectedMonth, monthsUntilMaturity));
 }
 
 function AssetSection({
