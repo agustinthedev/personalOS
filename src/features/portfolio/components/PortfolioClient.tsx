@@ -845,27 +845,59 @@ function ScenarioBarChart({
   const barPoints = points.filter((point) => point.month > 0);
   const maxIncome = Math.max(...barPoints.map((point) => point.projectedIncome), 1);
   const hasIncome = barPoints.some((point) => point.projectedIncome > 0);
+  const barWidth = barPoints.length > 0 ? Math.min(5, 70 / barPoints.length) : 0;
+  const labelEvery = barPoints.length > 12 ? 2 : 1;
 
   return (
     <article className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">{title}</h3>
-      <div
-        className="bar-grid grid h-60 overflow-hidden rounded-[20px] border border-white/10 bg-black/10 p-4"
-        style={{ gridTemplateColumns: hasIncome ? `repeat(${barPoints.length}, minmax(0, 1fr))` : undefined }}
-      >
+      <div className="bar-grid relative h-60 overflow-hidden rounded-[20px] border border-white/10 bg-black/10 p-4">
         {hasIncome ? (
-          barPoints.map((point) => (
-            <div key={point.month} className="group relative flex min-w-0 flex-col items-center justify-end gap-2 px-0.5">
-              <div
-                className="min-h-1 w-full max-w-5 rounded-t bg-emerald-200/75 transition group-hover:bg-emerald-100"
-                style={{ height: `${Math.max(4, (point.projectedIncome / maxIncome) * 100)}%` }}
-              />
-              <span className="max-w-full truncate font-mono text-[10px] text-zinc-500">{point.label}</span>
-              <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100">
-                {formatMoney(point.projectedIncome, currency)}
-              </span>
+          <>
+            <svg className="absolute inset-4 h-[calc(100%-32px)] w-[calc(100%-32px)]" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {barPoints.map((point, index) => {
+                const x = ((index + 0.5) / barPoints.length) * 100;
+                const height = Math.max(4, (point.projectedIncome / maxIncome) * 76);
+                const y = 82 - height;
+
+                return (
+                  <rect
+                    key={point.month}
+                    className="fill-emerald-200/75 transition hover:fill-emerald-100"
+                    x={x - barWidth / 2}
+                    y={y}
+                    width={barWidth}
+                    height={height}
+                    rx="0.8"
+                  />
+                );
+              })}
+            </svg>
+            <div className="absolute inset-4">
+              {barPoints.map((point, index) => {
+                const x = ((index + 0.5) / barPoints.length) * 100;
+                const shouldShowLabel =
+                  index % labelEvery === 0 || index === barPoints.length - 1;
+
+                return (
+                  <div
+                    key={point.month}
+                    className="group absolute bottom-0 h-full w-6 -translate-x-1/2"
+                    style={{ left: `${x}%` }}
+                  >
+                    {shouldShowLabel ? (
+                      <span className="absolute bottom-0 left-1/2 max-w-8 -translate-x-1/2 truncate font-mono text-[10px] text-zinc-500">
+                        {point.label}
+                      </span>
+                    ) : null}
+                    <span className="pointer-events-none absolute bottom-8 left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100">
+                      {formatMoney(point.projectedIncome, currency)}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-          ))
+          </>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-center text-sm text-zinc-500">
             No projected income for the current scenario.
