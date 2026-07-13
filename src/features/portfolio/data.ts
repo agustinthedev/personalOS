@@ -210,6 +210,7 @@ async function toAssetView(
         ? null
         : toNumber(asset.expectedMonthlyIncome),
     displayMonthlyIncome,
+    maturityDate: asset.maturityDate?.toISOString().slice(0, 10) ?? null,
     displayValue,
     displayCurrency,
     unrealizedGain: displayUnrealizedGain,
@@ -417,14 +418,15 @@ function buildPortfolioProjections({
     const projectedAssets = assets.reduce((sum, asset) => {
       const annualGrowth = (asset.expectedAnnualGrowthPercent ?? 0) / 100;
       const monthlyGrowth = annualGrowth === 0 ? 0 : Math.pow(1 + annualGrowth, 1 / 12) - 1;
-      return sum + asset.displayValue * Math.pow(1 + monthlyGrowth, month);
+      const activeMonths = getProjectionActiveMonths(asset.maturityDate, month);
+      return sum + asset.displayValue * Math.pow(1 + monthlyGrowth, activeMonths);
     }, 0);
     const projectedIncome = assets.reduce((sum, asset) => {
       if (!asset.isIncomeProducing || !asset.displayMonthlyIncome) {
         return sum;
       }
 
-      return sum + asset.displayMonthlyIncome * month;
+      return sum + asset.displayMonthlyIncome * getProjectionActiveMonths(asset.maturityDate, month);
     }, 0);
     const projectedLiabilities = liabilities.reduce((sum, liability) => {
       if (!liability.payoffMonths || liability.payoffMonths <= 0) {
@@ -456,4 +458,23 @@ function buildPortfolioProjections({
       projectedIncome: finalPoint.projectedIncome,
     },
   };
+}
+
+function getProjectionActiveMonths(maturityDate: string | null, projectedMonth: number) {
+  if (!maturityDate) {
+    return projectedMonth;
+  }
+
+  const now = new Date();
+  const maturity = new Date(`${maturityDate}T00:00:00`);
+  if (Number.isNaN(maturity.getTime()) || maturity <= now) {
+    return 0;
+  }
+
+  const monthsUntilMaturity =
+    (maturity.getFullYear() - now.getFullYear()) * 12 +
+    (maturity.getMonth() - now.getMonth()) +
+    (maturity.getDate() >= now.getDate() ? 0 : -1);
+
+  return Math.max(0, Math.min(projectedMonth, monthsUntilMaturity));
 }

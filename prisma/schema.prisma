@@ -202,6 +202,7 @@ model PortfolioAsset {
   expectedAnnualGrowthPercent Decimal?
   isIncomeProducing           Boolean                @default(false)
   expectedMonthlyIncome       Decimal?
+  maturityDate                DateTime?
   priceProvider               PriceProvider          @default(MANUAL)
   autoPriceEnabled            Boolean                @default(false)
   lastPriceUpdatedAt          DateTime?

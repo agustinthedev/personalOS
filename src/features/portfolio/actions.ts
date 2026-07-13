@@ -56,6 +56,18 @@ const optionalNonNegativeNumber = z
 const optionalPositiveInt = z
   .union([z.coerce.number().int().positive(), z.literal(""), z.null(), z.undefined()])
   .transform((value) => (typeof value === "number" ? value : null));
+const optionalDate = z
+  .string()
+  .optional()
+  .nullable()
+  .transform((value) => {
+    if (!value) {
+      return null;
+    }
+
+    const date = new Date(`${value}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? null : date;
+  });
 
 const nonNegativeNumber = z.coerce.number().min(0);
 const marketAssetSchema = z.object({
@@ -69,6 +81,7 @@ const marketAssetSchema = z.object({
   expectedAnnualGrowthPercent: optionalPercent,
   isIncomeProducing: z.boolean().default(false),
   expectedMonthlyIncome: optionalNonNegativeNumber,
+  maturityDate: optionalDate,
   accountNote: nullableText,
   notes: nullableText,
   createInitialBuy: z.boolean().default(false),
@@ -88,6 +101,7 @@ const manualAssetSchema = z.object({
   expectedAnnualGrowthPercent: optionalPercent,
   isIncomeProducing: z.boolean().default(false),
   expectedMonthlyIncome: optionalNonNegativeNumber,
+  maturityDate: optionalDate,
   accountNote: nullableText,
   notes: nullableText,
 });
@@ -149,6 +163,7 @@ export async function createMarketAsset(
         expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
         isIncomeProducing: data.isIncomeProducing,
         expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
+        maturityDate: data.maturityDate,
         priceProvider: currentUnitPrice ? "MANUAL" : "MANUAL",
         autoPriceEnabled: data.autoPriceEnabled,
         lastPriceUpdatedAt: currentUnitPrice ? new Date() : null,
@@ -166,7 +181,7 @@ export async function createMarketAsset(
       },
     });
 
-    if (data.createInitialBuy) {
+    if (data.createInitialBuy && (data.initialQuantity || data.initialGrossAmount)) {
       const transaction = normalizeTransactionAmounts({
         type: "BUY",
         inputMode: data.initialInputMode,
@@ -219,6 +234,7 @@ export async function updateMarketAsset(
         expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
         isIncomeProducing: data.isIncomeProducing,
         expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
+        maturityDate: data.maturityDate,
         autoPriceEnabled: data.autoPriceEnabled,
         lastPriceUpdatedAt: data.initialUnitPrice ? new Date() : undefined,
         accountNote: data.accountNote,
@@ -262,6 +278,7 @@ export async function createManualAsset(
         expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
         isIncomeProducing: data.isIncomeProducing,
         expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
+        maturityDate: data.maturityDate,
         accountNote: data.accountNote,
         notes: data.notes,
       },
@@ -291,6 +308,7 @@ export async function updateManualAsset(
         expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
         isIncomeProducing: data.isIncomeProducing,
         expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
+        maturityDate: data.maturityDate,
         accountNote: data.accountNote,
         notes: data.notes,
       },

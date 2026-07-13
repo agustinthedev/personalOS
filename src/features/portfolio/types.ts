@@ -85,6 +85,7 @@ export type PortfolioAssetView = {
   isIncomeProducing: boolean;
   expectedMonthlyIncome: number | null;
   displayMonthlyIncome: number | null;
+  maturityDate: string | null;
   displayValue: number;
   displayCurrency: CurrencyCode;
   unrealizedGain: number | null;

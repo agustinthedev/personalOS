@@ -636,6 +636,11 @@ function AssetSection({
                         income
                       </span>
                     ) : null}
+                    {asset.maturityDate ? (
+                      <span className="rounded-full border border-sky-300/20 px-2 py-1 text-xs text-sky-100">
+                        matures {formatDateOnly(asset.maturityDate)}
+                      </span>
+                    ) : null}
                   </div>
                   {asset.accountNote ? <p className="mt-2 text-sm text-zinc-500">{asset.accountNote}</p> : null}
                 </div>
@@ -662,7 +667,20 @@ function AssetSection({
                 </div>
               ) : null}
 
-              {(asset.expectedAnnualGrowthPercent !== null || asset.isIncomeProducing) ? (
+              {asset.kind === "MARKET_ASSET" && asset.quantityHeld === 0 ? (
+                <div className="mt-4 rounded-[20px] border border-amber-300/20 bg-amber-300/[0.035] p-3 text-sm text-amber-100">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span>No position is recorded yet, so this asset is valued at zero.</span>
+                    {onTransaction ? (
+                      <button type="button" className={ghostButton} onClick={() => onTransaction(asset)}>
+                        Add BUY
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
+              {(asset.expectedAnnualGrowthPercent !== null || asset.isIncomeProducing || asset.maturityDate) ? (
                 <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                   <AssetStat
                     label="Expected growth"
@@ -679,6 +697,10 @@ function AssetSection({
                         ? `${formatMoney(asset.displayMonthlyIncome, asset.displayCurrency)} / month`
                         : "-"
                     }
+                  />
+                  <AssetStat
+                    label="Maturity"
+                    value={asset.maturityDate ? formatDateOnly(asset.maturityDate) : "-"}
                   />
                 </div>
               ) : null}
@@ -802,7 +824,7 @@ function MarketAssetForm({
   isPending: boolean;
   onSubmit: (payload: Record<string, unknown>) => void;
 }) {
-  const [createInitialBuy, setCreateInitialBuy] = useState(false);
+  const [createInitialBuy, setCreateInitialBuy] = useState(!asset);
   const [inputMode, setInputMode] = useState<"AMOUNT" | "QUANTITY">("AMOUNT");
   const [quantity, setQuantity] = useState("");
   const [grossAmount, setGrossAmount] = useState("");
@@ -825,6 +847,7 @@ function MarketAssetForm({
       expectedAnnualGrowthPercent: String(form.get("expectedAnnualGrowthPercent") ?? ""),
       isIncomeProducing,
       expectedMonthlyIncome: String(form.get("expectedMonthlyIncome") ?? ""),
+      maturityDate: String(form.get("maturityDate") ?? ""),
       accountNote: String(form.get("accountNote") ?? ""),
       notes: String(form.get("notes") ?? ""),
       createInitialBuy,
@@ -845,6 +868,7 @@ function MarketAssetForm({
         <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={asset?.currency ?? "USD"} /></Field>
         <Field label="Unit price"><input name="initialUnitPrice" className={fieldClass} value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} placeholder="Latest or manual price" /></Field>
         <Field label="Annual growth %"><input name="expectedAnnualGrowthPercent" type="number" step="0.01" className={fieldClass} defaultValue={asset?.expectedAnnualGrowthPercent ?? ""} placeholder="0.00" /></Field>
+        <Field label="Maturity date"><input name="maturityDate" type="date" className={fieldClass} defaultValue={asset?.maturityDate ?? ""} /></Field>
         <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
           <input name="autoPriceEnabled" type="checkbox" defaultChecked={asset?.autoPriceEnabled ?? true} />
           Auto refresh price
@@ -875,7 +899,7 @@ function MarketAssetForm({
       {!asset ? (
         <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
           <input type="checkbox" checked={createInitialBuy} onChange={(event) => setCreateInitialBuy(event.target.checked)} />
-          Add initial buy transaction
+          Add initial position
         </label>
       ) : null}
 
@@ -926,6 +950,7 @@ function ManualAssetForm({
       expectedAnnualGrowthPercent: String(form.get("expectedAnnualGrowthPercent") ?? ""),
       isIncomeProducing,
       expectedMonthlyIncome: String(form.get("expectedMonthlyIncome") ?? ""),
+      maturityDate: String(form.get("maturityDate") ?? ""),
       accountNote: String(form.get("accountNote") ?? ""),
       notes: String(form.get("notes") ?? ""),
     });
@@ -939,6 +964,7 @@ function ManualAssetForm({
         <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={asset?.currency ?? "USD"} /></Field>
         <Field label="Value"><input name="manualValue" type="number" step="0.01" min="0" className={fieldClass} defaultValue={asset?.manualValue ?? ""} required /></Field>
         <Field label="Annual growth %"><input name="expectedAnnualGrowthPercent" type="number" step="0.01" className={fieldClass} defaultValue={asset?.expectedAnnualGrowthPercent ?? ""} placeholder="0.00" /></Field>
+        <Field label="Maturity date"><input name="maturityDate" type="date" className={fieldClass} defaultValue={asset?.maturityDate ?? ""} /></Field>
         <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
           <input
             name="isIncomeProducing"
@@ -1331,6 +1357,14 @@ function formatDate(value: string | null) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatDateOnly(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(`${value}T00:00:00`));
 }
 
 function today() {
