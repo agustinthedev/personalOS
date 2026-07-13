@@ -6,6 +6,7 @@ import type {
   PortfolioLiabilityView,
   PortfolioMetric,
   PortfolioPageData,
+  PortfolioProjectionPoint,
   PortfolioSnapshotView,
   PortfolioTransactionView,
   PriceStatus,
@@ -133,6 +134,12 @@ export async function getPortfolioPageData(): Promise<PortfolioPageData> {
     },
     allocationByCategory: buildAllocationByCategory([...marketAssets, ...manualAssets]),
     allocationByCurrency: buildAllocationByCurrency([...marketAssets, ...manualAssets]),
+    projections: buildPortfolioProjections({
+      assets: [...marketAssets, ...manualAssets],
+      liabilities: liabilityViews,
+      totalAssets: totals.totalAssets,
+      totalLiabilities: totals.totalLiabilities,
+    }),
     warnings: [...new Set(warnings)],
     freshness: {
       lastPriceRefresh: latestPriceRefresh,
@@ -169,6 +176,14 @@ async function toAssetView(
     unrealizedGain === null
       ? null
       : await convertAmount(unrealizedGain, asset.currency as CurrencyCode, displayCurrency);
+  const displayMonthlyIncome =
+    asset.expectedMonthlyIncome === null
+      ? null
+      : await convertAmount(
+          toNumber(asset.expectedMonthlyIncome),
+          asset.currency as CurrencyCode,
+          displayCurrency,
+        );
 
   return {
     id: asset.id,
@@ -185,6 +200,16 @@ async function toAssetView(
     costBasis,
     currentUnitPrice: asset.currentUnitPrice === null ? null : toNumber(asset.currentUnitPrice),
     currentTotalValue: nativeValue,
+    expectedAnnualGrowthPercent:
+      asset.expectedAnnualGrowthPercent === null
+        ? null
+        : toNumber(asset.expectedAnnualGrowthPercent),
+    isIncomeProducing: asset.isIncomeProducing,
+    expectedMonthlyIncome:
+      asset.expectedMonthlyIncome === null
+        ? null
+        : toNumber(asset.expectedMonthlyIncome),
+    displayMonthlyIncome,
     displayValue,
     displayCurrency,
     unrealizedGain: displayUnrealizedGain,
@@ -216,6 +241,7 @@ async function toLiabilityView(
       displayCurrency,
     ),
     displayCurrency,
+    payoffMonths: liability.payoffMonths,
     accountNote: liability.accountNote ?? "",
     notes: liability.notes ?? "",
   };
@@ -265,6 +291,7 @@ function getAssetVisualCategory(asset: {
       STOCK: "Stocks",
       ETF: "ETFs & Funds",
       FUND: "ETFs & Funds",
+      BOND: "Fixed Income",
       COMMODITY: "Commodities",
     };
     return labels[asset.marketType ?? ""] ?? "Market Assets";
@@ -272,6 +299,7 @@ function getAssetVisualCategory(asset: {
 
   const labels: Record<string, string> = {
     CASH: "Cash",
+    CASH_EQUIVALENT: "Cash & Equivalents",
     REAL_ESTATE: "Real Estate",
     VEHICLE: "Vehicles",
     COLLECTIBLE: "Collectibles",
@@ -371,4 +399,61 @@ function buildAllocationByCurrency(assets: PortfolioAssetView[]): PortfolioAlloc
       percent: total > 0 ? value / total : 0,
     }))
     .sort((a, b) => b.value - a.value);
+}
+
+function buildPortfolioProjections({
+  assets,
+  liabilities,
+  totalAssets,
+  totalLiabilities,
+}: {
+  assets: PortfolioAssetView[];
+  liabilities: PortfolioLiabilityView[];
+  totalAssets: number;
+  totalLiabilities: number;
+}) {
+  const projectionMonths = [0, 12, 24, 36, 60];
+  const points: PortfolioProjectionPoint[] = projectionMonths.map((month) => {
+    const projectedAssets = assets.reduce((sum, asset) => {
+      const annualGrowth = (asset.expectedAnnualGrowthPercent ?? 0) / 100;
+      const monthlyGrowth = annualGrowth === 0 ? 0 : Math.pow(1 + annualGrowth, 1 / 12) - 1;
+      return sum + asset.displayValue * Math.pow(1 + monthlyGrowth, month);
+    }, 0);
+    const projectedIncome = assets.reduce((sum, asset) => {
+      if (!asset.isIncomeProducing || !asset.displayMonthlyIncome) {
+        return sum;
+      }
+
+      return sum + asset.displayMonthlyIncome * month;
+    }, 0);
+    const projectedLiabilities = liabilities.reduce((sum, liability) => {
+      if (!liability.payoffMonths || liability.payoffMonths <= 0) {
+        return sum + liability.displayBalance;
+      }
+
+      const remainingRatio = Math.max(0, 1 - month / liability.payoffMonths);
+      return sum + liability.displayBalance * remainingRatio;
+    }, 0);
+
+    return {
+      month,
+      label: month === 0 ? "Today" : `${month}m`,
+      assets: projectedAssets + projectedIncome,
+      liabilities: projectedLiabilities,
+      projectedIncome,
+      netWorth: projectedAssets + projectedIncome - projectedLiabilities,
+    };
+  });
+  const finalPoint = points.at(-1) ?? points[0];
+  const currentNetWorth = totalAssets - totalLiabilities;
+
+  return {
+    points,
+    summary: {
+      horizonMonths: finalPoint.month,
+      projectedNetWorth: finalPoint.netWorth,
+      projectedGain: finalPoint.netWorth - currentNetWorth,
+      projectedIncome: finalPoint.projectedIncome,
+    },
+  };
 }

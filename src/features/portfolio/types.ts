@@ -8,11 +8,13 @@ export const marketAssetTypeOptions = [
   { value: "STOCK", label: "Stocks" },
   { value: "ETF", label: "ETFs" },
   { value: "FUND", label: "Funds" },
+  { value: "BOND", label: "Fixed Income / Bond" },
   { value: "COMMODITY", label: "Commodities" },
 ] as const;
 
 export const manualAssetTypeOptions = [
   { value: "CASH", label: "Cash" },
+  { value: "CASH_EQUIVALENT", label: "Cash & Equivalents" },
   { value: "REAL_ESTATE", label: "Real Estate" },
   { value: "VEHICLE", label: "Vehicles" },
   { value: "COLLECTIBLE", label: "Collectibles" },
@@ -79,6 +81,10 @@ export type PortfolioAssetView = {
   costBasis: number | null;
   currentUnitPrice: number | null;
   currentTotalValue: number;
+  expectedAnnualGrowthPercent: number | null;
+  isIncomeProducing: boolean;
+  expectedMonthlyIncome: number | null;
+  displayMonthlyIncome: number | null;
   displayValue: number;
   displayCurrency: CurrencyCode;
   unrealizedGain: number | null;
@@ -100,6 +106,7 @@ export type PortfolioLiabilityView = {
   currentBalance: number;
   displayBalance: number;
   displayCurrency: CurrencyCode;
+  payoffMonths: number | null;
   accountNote: string;
   notes: string;
 };
@@ -131,6 +138,22 @@ export type PortfolioAllocation = {
   percent: number;
 };
 
+export type PortfolioProjectionPoint = {
+  month: number;
+  label: string;
+  assets: number;
+  liabilities: number;
+  projectedIncome: number;
+  netWorth: number;
+};
+
+export type PortfolioProjectionSummary = {
+  horizonMonths: number;
+  projectedNetWorth: number;
+  projectedGain: number;
+  projectedIncome: number;
+};
+
 export type PortfolioPageData = {
   settings: PortfolioSettingsView;
   marketAssets: PortfolioAssetView[];
@@ -145,6 +168,10 @@ export type PortfolioPageData = {
   };
   allocationByCategory: PortfolioAllocation[];
   allocationByCurrency: PortfolioAllocation[];
+  projections: {
+    points: PortfolioProjectionPoint[];
+    summary: PortfolioProjectionSummary;
+  };
   warnings: string[];
   freshness: {
     lastPriceRefresh: string | null;

@@ -186,29 +186,32 @@ model PortfolioSettings {
 }
 
 model PortfolioAsset {
-  id                 String                 @id @default(cuid())
-  name               String
-  symbol             String?
-  kind               PortfolioItemKind
-  marketType         MarketAssetType?
-  manualType         ManualAssetType?
-  currency           Currency
-  manualValue        Decimal?
-  quantityHeld       Decimal?               @default(0)
-  averageCost        Decimal?
-  costBasis          Decimal?
-  currentUnitPrice   Decimal?
-  currentTotalValue  Decimal                @default(0)
-  priceProvider      PriceProvider          @default(MANUAL)
-  autoPriceEnabled   Boolean                @default(false)
-  lastPriceUpdatedAt DateTime?
-  accountNote        String?
-  notes              String?
-  archivedAt         DateTime?
-  createdAt          DateTime               @default(now())
-  updatedAt          DateTime               @updatedAt
-  transactions       PortfolioTransaction[]
-  priceSnapshots     AssetPriceSnapshot[]
+  id                          String                 @id @default(cuid())
+  name                        String
+  symbol                      String?
+  kind                        PortfolioItemKind
+  marketType                  MarketAssetType?
+  manualType                  ManualAssetType?
+  currency                    Currency
+  manualValue                 Decimal?
+  quantityHeld                Decimal?               @default(0)
+  averageCost                 Decimal?
+  costBasis                   Decimal?
+  currentUnitPrice            Decimal?
+  currentTotalValue           Decimal                @default(0)
+  expectedAnnualGrowthPercent Decimal?
+  isIncomeProducing           Boolean                @default(false)
+  expectedMonthlyIncome       Decimal?
+  priceProvider               PriceProvider          @default(MANUAL)
+  autoPriceEnabled            Boolean                @default(false)
+  lastPriceUpdatedAt          DateTime?
+  accountNote                 String?
+  notes                       String?
+  archivedAt                  DateTime?
+  createdAt                   DateTime               @default(now())
+  updatedAt                   DateTime               @updatedAt
+  transactions                PortfolioTransaction[]
+  priceSnapshots              AssetPriceSnapshot[]
 
   @@index([kind])
   @@index([marketType])
@@ -246,6 +249,7 @@ model PortfolioLiability {
   type           LiabilityType @default(OTHER)
   currency       Currency
   currentBalance Decimal
+  payoffMonths   Int?
   accountNote    String?
   notes          String?
   archivedAt     DateTime?
@@ -306,12 +310,14 @@ enum MarketAssetType {
   STOCK
   ETF
   FUND
+  BOND
   CRYPTO
   COMMODITY
 }
 
 enum ManualAssetType {
   CASH
+  CASH_EQUIVALENT
   REAL_ESTATE
   VEHICLE
   COLLECTIBLE

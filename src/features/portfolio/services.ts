@@ -196,7 +196,7 @@ export async function getExchangeRate(
 
   if (apiBaseUrl) {
     try {
-      const url = `${apiBaseUrl.replace(/\/$/, "")}?base=${base}&quote=${quote}`;
+      const url = buildExchangeRateUrl(apiBaseUrl, base, quote);
       const response = await fetch(url, { next: { revalidate: 0 } });
 
       if (!response.ok) {
@@ -208,6 +208,7 @@ export async function getExchangeRate(
         payload.rate,
         payload.value,
         (payload.rates as Record<string, unknown> | undefined)?.[quote],
+        (payload.conversion_rates as Record<string, unknown> | undefined)?.[quote],
       ];
 
       for (const candidate of candidates) {
@@ -233,8 +234,24 @@ export async function getExchangeRate(
   return {
     rate: convertUsdUyuRate(fallbackUsdUyuRate, base, quote),
     source: "fallback",
-    warning: "No FX provider or cached rate is available. Using a local USD/UYU fallback.",
+    warning: `Using local USD/UYU fallback rate (${fallbackUsdUyuRate.toFixed(2)}). Configure FX_RATE_API_BASE_URL for live rates.`,
   };
+}
+
+function buildExchangeRateUrl(baseUrl: string, base: CurrencyCode, quote: CurrencyCode) {
+  const trimmed = baseUrl.replace(/\/$/, "");
+
+  if (trimmed.includes("{base}") || trimmed.includes("{quote}")) {
+    return trimmed
+      .replaceAll("{base}", encodeURIComponent(base))
+      .replaceAll("{quote}", encodeURIComponent(quote));
+  }
+
+  if (trimmed.includes("open.er-api.com/v6/latest")) {
+    return `${trimmed}/${encodeURIComponent(base)}`;
+  }
+
+  return `${trimmed}?base=${encodeURIComponent(base)}&quote=${encodeURIComponent(quote)}`;
 }
 
 export async function refreshStaleExchangeRates(settings: {
@@ -465,7 +482,7 @@ export async function calculatePortfolioTotals(displayCurrency: CurrencyCode) {
     );
     totalAssets += converted;
 
-    if (asset.manualType === "CASH") {
+    if (asset.manualType === "CASH" || asset.manualType === "CASH_EQUIVALENT") {
       liquidAssets += converted;
     }
   }

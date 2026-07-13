@@ -17,8 +17,15 @@ import {
 const portfolioPath = "/portfolio";
 
 const currencySchema = z.enum(["USD", "UYU"]);
-const marketAssetTypeSchema = z.enum(["STOCK", "ETF", "FUND", "CRYPTO", "COMMODITY"]);
-const manualAssetTypeSchema = z.enum(["CASH", "REAL_ESTATE", "VEHICLE", "COLLECTIBLE", "OTHER"]);
+const marketAssetTypeSchema = z.enum(["STOCK", "ETF", "FUND", "BOND", "CRYPTO", "COMMODITY"]);
+const manualAssetTypeSchema = z.enum([
+  "CASH",
+  "CASH_EQUIVALENT",
+  "REAL_ESTATE",
+  "VEHICLE",
+  "COLLECTIBLE",
+  "OTHER",
+]);
 const liabilityTypeSchema = z.enum(["LOAN", "CREDIT_CARD", "MORTGAGE", "PERSONAL_DEBT", "OTHER"]);
 const transactionTypeSchema = z.enum([
   "BUY",
@@ -40,6 +47,15 @@ const nullableText = z
 const optionalPositiveNumber = z
   .union([z.coerce.number().positive(), z.literal(""), z.null(), z.undefined()])
   .transform((value) => (typeof value === "number" ? value : null));
+const optionalPercent = z
+  .union([z.coerce.number().min(-100).max(100), z.literal(""), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "number" ? value : null));
+const optionalNonNegativeNumber = z
+  .union([z.coerce.number().min(0), z.literal(""), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "number" ? value : null));
+const optionalPositiveInt = z
+  .union([z.coerce.number().int().positive(), z.literal(""), z.null(), z.undefined()])
+  .transform((value) => (typeof value === "number" ? value : null));
 
 const nonNegativeNumber = z.coerce.number().min(0);
 const marketAssetSchema = z.object({
@@ -50,6 +66,9 @@ const marketAssetSchema = z.object({
   currency: currencySchema,
   autoPriceEnabled: z.boolean().default(false),
   initialUnitPrice: optionalPositiveNumber,
+  expectedAnnualGrowthPercent: optionalPercent,
+  isIncomeProducing: z.boolean().default(false),
+  expectedMonthlyIncome: optionalNonNegativeNumber,
   accountNote: nullableText,
   notes: nullableText,
   createInitialBuy: z.boolean().default(false),
@@ -66,6 +85,9 @@ const manualAssetSchema = z.object({
   manualType: manualAssetTypeSchema,
   currency: currencySchema,
   manualValue: nonNegativeNumber,
+  expectedAnnualGrowthPercent: optionalPercent,
+  isIncomeProducing: z.boolean().default(false),
+  expectedMonthlyIncome: optionalNonNegativeNumber,
   accountNote: nullableText,
   notes: nullableText,
 });
@@ -76,6 +98,7 @@ const liabilitySchema = z.object({
   type: liabilityTypeSchema,
   currency: currencySchema,
   currentBalance: nonNegativeNumber,
+  payoffMonths: optionalPositiveInt,
   accountNote: nullableText,
   notes: nullableText,
 });
@@ -123,6 +146,9 @@ export async function createMarketAsset(
         currency: data.currency,
         currentUnitPrice,
         currentTotalValue: 0,
+        expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
+        isIncomeProducing: data.isIncomeProducing,
+        expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
         priceProvider: currentUnitPrice ? "MANUAL" : "MANUAL",
         autoPriceEnabled: data.autoPriceEnabled,
         lastPriceUpdatedAt: currentUnitPrice ? new Date() : null,
@@ -190,6 +216,9 @@ export async function updateMarketAsset(
         marketType: data.marketType,
         currency: data.currency,
         currentUnitPrice: data.initialUnitPrice,
+        expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
+        isIncomeProducing: data.isIncomeProducing,
+        expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
         autoPriceEnabled: data.autoPriceEnabled,
         lastPriceUpdatedAt: data.initialUnitPrice ? new Date() : undefined,
         accountNote: data.accountNote,
@@ -230,6 +259,9 @@ export async function createManualAsset(
         currency: data.currency,
         manualValue: data.manualValue,
         currentTotalValue: data.manualValue,
+        expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
+        isIncomeProducing: data.isIncomeProducing,
+        expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
         accountNote: data.accountNote,
         notes: data.notes,
       },
@@ -256,6 +288,9 @@ export async function updateManualAsset(
         currency: data.currency,
         manualValue: data.manualValue,
         currentTotalValue: data.manualValue,
+        expectedAnnualGrowthPercent: data.expectedAnnualGrowthPercent,
+        isIncomeProducing: data.isIncomeProducing,
+        expectedMonthlyIncome: data.isIncomeProducing ? data.expectedMonthlyIncome : null,
         accountNote: data.accountNote,
         notes: data.notes,
       },
@@ -394,6 +429,7 @@ export async function createLiability(
         type: data.type,
         currency: data.currency,
         currentBalance: data.currentBalance,
+        payoffMonths: data.payoffMonths,
         accountNote: data.accountNote,
         notes: data.notes,
       },
@@ -419,6 +455,7 @@ export async function updateLiability(
         type: data.type,
         currency: data.currency,
         currentBalance: data.currentBalance,
+        payoffMonths: data.payoffMonths,
         accountNote: data.accountNote,
         notes: data.notes,
       },

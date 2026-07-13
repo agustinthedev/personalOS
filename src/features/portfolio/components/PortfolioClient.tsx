@@ -150,6 +150,8 @@ export function PortfolioClient({ initialData }: { initialData: PortfolioPageDat
         <AllocationPanel data={data} />
       </section>
 
+      <ProjectionPanel data={data} />
+
       {allAssets.length === 0 && data.liabilities.length === 0 ? (
         <section className="panel mb-5 rounded-[28px] p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
@@ -306,8 +308,25 @@ function MetricCard({ metric, emphasis = false }: { metric: PortfolioMetric; emp
 }
 
 function HistoryPanel({ data }: { data: PortfolioPageData }) {
-  const points = data.snapshots.slice(-24);
-  const max = Math.max(...points.map((snapshot) => snapshot.totalAssets), 1);
+  const points = buildHistoryPoints(data);
+  const values = points.map((point) => point.netWorth);
+  const min = Math.min(...values, 0);
+  const max = Math.max(...values, 1);
+  const range = max - min || Math.max(Math.abs(max), 1);
+  const xStep = points.length > 1 ? 100 / (points.length - 1) : 0;
+  const svgPoints = points.map((point, index) => {
+    const x = points.length > 1 ? index * xStep : 50;
+    const y = 88 - ((point.netWorth - min) / range) * 68;
+
+    return { ...point, x, y };
+  });
+  const linePath = svgPoints
+    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x.toFixed(2)} ${point.y.toFixed(2)}`)
+    .join(" ");
+  const areaPath =
+    svgPoints.length > 0
+      ? `${linePath} L ${svgPoints.at(-1)?.x.toFixed(2)} 92 L ${svgPoints[0].x.toFixed(2)} 92 Z`
+      : "";
 
   return (
     <div className="panel rounded-[28px] p-5">
@@ -321,18 +340,43 @@ function HistoryPanel({ data }: { data: PortfolioPageData }) {
           <p>FX {data.freshness.fxRate ? data.freshness.fxRate.toFixed(2) : "n/a"}</p>
         </div>
       </div>
-      <div className="bar-grid mt-7 flex h-64 items-end gap-2 rounded-[24px] border border-white/10 bg-white/[0.012] px-4 pb-4">
+      <div className="bar-grid relative mt-7 h-64 rounded-[24px] border border-white/10 bg-white/[0.012] p-4">
         {points.length > 0 ? (
-          points.map((snapshot) => (
-            <div key={snapshot.id} className="flex flex-1 flex-col items-center justify-end gap-2">
-              <div
-                className="w-full rounded-t bg-gradient-to-t from-white/70 to-sky-200/30"
-                style={{ height: `${Math.max(4, (snapshot.netWorth / max) * 100)}%` }}
-                title={`${formatDate(snapshot.capturedAt)} ${formatMoney(snapshot.netWorth, snapshot.currency)}`}
+          <>
+            <svg className="h-full w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none" role="img">
+              <path d={areaPath} fill="rgba(255,255,255,0.08)" />
+              <path
+                d={linePath}
+                fill="none"
+                stroke="rgba(248,250,252,0.82)"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="1.8"
+                vectorEffect="non-scaling-stroke"
               />
-              <div className="h-1 w-full rounded bg-white/40" />
+            </svg>
+            <div className="pointer-events-none absolute inset-4">
+              {svgPoints.map((point) => (
+                <button
+                  key={point.id}
+                  type="button"
+                  aria-label={`${point.label} ${formatMoney(point.netWorth, point.currency)}`}
+                  className="group pointer-events-auto absolute h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full focus:outline-none"
+                  style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                >
+                  <span
+                    className={`absolute left-1/2 top-1/2 block -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-black/45 transition group-hover:scale-125 group-focus-visible:scale-125 ${
+                      point.isCurrent ? "h-3.5 w-3.5 bg-sky-200" : "h-3 w-3 bg-zinc-50"
+                    }`}
+                  />
+                  <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-left text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100 group-focus-visible:opacity-100">
+                    <span className="block whitespace-nowrap font-semibold">{formatMoney(point.netWorth, point.currency)}</span>
+                    <span className="mt-1 block whitespace-nowrap text-zinc-500">{point.label}</span>
+                  </span>
+                </button>
+              ))}
             </div>
-          ))
+          </>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-zinc-500">
             No snapshots yet.
@@ -341,6 +385,36 @@ function HistoryPanel({ data }: { data: PortfolioPageData }) {
       </div>
     </div>
   );
+}
+
+function buildHistoryPoints(data: PortfolioPageData) {
+  const current = {
+    id: "current",
+    netWorth: data.metrics.netWorth.value,
+    currency: data.metrics.netWorth.currency,
+    capturedAt: new Date().toISOString(),
+    label: "Current",
+    isCurrent: true,
+  };
+  const snapshots = data.snapshots.slice(-23).map((snapshot) => ({
+    id: snapshot.id,
+    netWorth: snapshot.netWorth,
+    currency: snapshot.currency,
+    capturedAt: snapshot.capturedAt,
+    label: formatDate(snapshot.capturedAt),
+    isCurrent: false,
+  }));
+  const lastSnapshot = snapshots.at(-1);
+
+  if (!lastSnapshot) {
+    return [current];
+  }
+
+  if (Math.abs(lastSnapshot.netWorth - current.netWorth) < 0.01) {
+    return snapshots;
+  }
+
+  return [...snapshots, current];
 }
 
 function AllocationPanel({ data }: { data: PortfolioPageData }) {
@@ -423,6 +497,100 @@ function AllocationRow({
   );
 }
 
+function ProjectionPanel({ data }: { data: PortfolioPageData }) {
+  const points = data.projections.points.filter((point) => point.month > 0);
+  const maxNetWorth = Math.max(...data.projections.points.map((point) => point.netWorth), 1);
+  const minNetWorth = Math.min(...data.projections.points.map((point) => point.netWorth), 0);
+  const range = maxNetWorth - minNetWorth || Math.max(Math.abs(maxNetWorth), 1);
+
+  return (
+    <section className="panel mb-5 rounded-[28px] p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-400">
+            Projections
+          </p>
+          <h2 className="mt-2 text-xl font-semibold text-zinc-50">Expected net worth path</h2>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-2xl font-semibold text-zinc-50">
+            {formatMoney(data.projections.summary.projectedNetWorth, data.settings.displayCurrency)}
+          </p>
+          <p className={`mt-1 text-sm ${changeTone(data.projections.summary.projectedGain)}`}>
+            {formatMoney(data.projections.summary.projectedGain, data.settings.displayCurrency)} in{" "}
+            {data.projections.summary.horizonMonths}m
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 grid gap-4 xl:grid-cols-[1fr_280px]">
+        <div className="grid gap-3 md:grid-cols-4">
+          {points.map((point) => {
+            const height = ((point.netWorth - minNetWorth) / range) * 100;
+
+            return (
+              <article key={point.month} className="rounded-[22px] border border-white/10 bg-white/[0.014] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                      {point.label}
+                    </p>
+                    <p className="mt-3 font-mono text-xl font-semibold text-zinc-50">
+                      {formatMoney(point.netWorth, data.settings.displayCurrency)}
+                    </p>
+                  </div>
+                  <div className="flex h-16 w-3 items-end rounded-full bg-white/10">
+                    <div
+                      className="w-full rounded-full bg-sky-200/80"
+                      style={{ height: `${Math.max(8, height)}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 space-y-1 text-xs text-zinc-500">
+                  <p>Assets {formatMoney(point.assets, data.settings.displayCurrency)}</p>
+                  <p>Liabilities {formatMoney(point.liabilities, data.settings.displayCurrency)}</p>
+                  <p>Income {formatMoney(point.projectedIncome, data.settings.displayCurrency)}</p>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+
+        <aside className="rounded-[22px] border border-white/10 bg-black/10 p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Inputs used
+          </p>
+          <div className="mt-4 space-y-3 text-sm text-zinc-300">
+            <ProjectionInputRow
+              label="Assets with growth"
+              value={[...data.marketAssets, ...data.manualAssets].filter(
+                (asset) => asset.expectedAnnualGrowthPercent !== null,
+              ).length.toString()}
+            />
+            <ProjectionInputRow
+              label="Income assets"
+              value={[...data.marketAssets, ...data.manualAssets].filter((asset) => asset.isIncomeProducing).length.toString()}
+            />
+            <ProjectionInputRow
+              label="Liabilities with payoff"
+              value={data.liabilities.filter((liability) => liability.payoffMonths !== null).length.toString()}
+            />
+          </div>
+        </aside>
+      </div>
+    </section>
+  );
+}
+
+function ProjectionInputRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-zinc-500">{label}</span>
+      <span className="font-mono text-zinc-100">{value}</span>
+    </div>
+  );
+}
+
 function AssetSection({
   title,
   assets,
@@ -463,6 +631,11 @@ function AssetSection({
                     <span className={`rounded-full border px-2 py-1 text-xs ${statusClass(asset.priceStatus)}`}>
                       {asset.priceStatus}
                     </span>
+                    {asset.isIncomeProducing ? (
+                      <span className="rounded-full border border-emerald-300/20 px-2 py-1 text-xs text-emerald-100">
+                        income
+                      </span>
+                    ) : null}
                   </div>
                   {asset.accountNote ? <p className="mt-2 text-sm text-zinc-500">{asset.accountNote}</p> : null}
                 </div>
@@ -485,6 +658,27 @@ function AssetSection({
                     label="Unrealized P/L"
                     value={asset.unrealizedGain === null ? "-" : formatChange(asset.unrealizedGain, asset.unrealizedGainPercent, asset.displayCurrency)}
                     tone={changeTone(asset.unrealizedGain)}
+                  />
+                </div>
+              ) : null}
+
+              {(asset.expectedAnnualGrowthPercent !== null || asset.isIncomeProducing) ? (
+                <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+                  <AssetStat
+                    label="Expected growth"
+                    value={
+                      asset.expectedAnnualGrowthPercent === null
+                        ? "-"
+                        : `${asset.expectedAnnualGrowthPercent.toFixed(2)}% / year`
+                    }
+                  />
+                  <AssetStat
+                    label="Expected income"
+                    value={
+                      asset.isIncomeProducing && asset.displayMonthlyIncome
+                        ? `${formatMoney(asset.displayMonthlyIncome, asset.displayCurrency)} / month`
+                        : "-"
+                    }
                   />
                 </div>
               ) : null}
@@ -558,6 +752,7 @@ function LiabilitySection({
                   <p className="mt-1 text-sm text-zinc-500">
                     {liability.type.replace("_", " ")}
                     {liability.accountNote ? ` · ${liability.accountNote}` : ""}
+                    {liability.payoffMonths ? ` · paid in ${liability.payoffMonths}m` : ""}
                   </p>
                 </div>
                 <div className="text-right">
@@ -612,6 +807,7 @@ function MarketAssetForm({
   const [quantity, setQuantity] = useState("");
   const [grossAmount, setGrossAmount] = useState("");
   const [unitPrice, setUnitPrice] = useState(asset?.currentUnitPrice?.toString() ?? "");
+  const [isIncomeProducing, setIsIncomeProducing] = useState(asset?.isIncomeProducing ?? false);
 
   const computed = useMemo(() => computeTrade(inputMode, quantity, grossAmount, unitPrice), [inputMode, quantity, grossAmount, unitPrice]);
 
@@ -626,6 +822,9 @@ function MarketAssetForm({
       currency: String(form.get("currency") ?? "USD"),
       autoPriceEnabled: form.get("autoPriceEnabled") === "on",
       initialUnitPrice: String(form.get("initialUnitPrice") ?? ""),
+      expectedAnnualGrowthPercent: String(form.get("expectedAnnualGrowthPercent") ?? ""),
+      isIncomeProducing,
+      expectedMonthlyIncome: String(form.get("expectedMonthlyIncome") ?? ""),
       accountNote: String(form.get("accountNote") ?? ""),
       notes: String(form.get("notes") ?? ""),
       createInitialBuy,
@@ -645,10 +844,32 @@ function MarketAssetForm({
         <Field label="Type"><Select name="marketType" options={marketAssetTypeOptions} defaultValue={asset?.marketType ?? "CRYPTO"} /></Field>
         <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={asset?.currency ?? "USD"} /></Field>
         <Field label="Unit price"><input name="initialUnitPrice" className={fieldClass} value={unitPrice} onChange={(event) => setUnitPrice(event.target.value)} placeholder="Latest or manual price" /></Field>
+        <Field label="Annual growth %"><input name="expectedAnnualGrowthPercent" type="number" step="0.01" className={fieldClass} defaultValue={asset?.expectedAnnualGrowthPercent ?? ""} placeholder="0.00" /></Field>
         <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
           <input name="autoPriceEnabled" type="checkbox" defaultChecked={asset?.autoPriceEnabled ?? true} />
           Auto refresh price
         </label>
+        <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
+          <input
+            name="isIncomeProducing"
+            type="checkbox"
+            checked={isIncomeProducing}
+            onChange={(event) => setIsIncomeProducing(event.target.checked)}
+          />
+          Income producing
+        </label>
+        <Field label="Monthly income">
+          <input
+            name="expectedMonthlyIncome"
+            type="number"
+            step="0.01"
+            min="0"
+            className={fieldClass}
+            defaultValue={asset?.expectedMonthlyIncome ?? ""}
+            disabled={!isIncomeProducing}
+            placeholder="0.00"
+          />
+        </Field>
       </div>
 
       {!asset ? (
@@ -691,6 +912,8 @@ function ManualAssetForm({
   isPending: boolean;
   onSubmit: (payload: Record<string, unknown>) => void;
 }) {
+  const [isIncomeProducing, setIsIncomeProducing] = useState(asset?.isIncomeProducing ?? false);
+
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -700,6 +923,9 @@ function ManualAssetForm({
       manualType: String(form.get("manualType") ?? "CASH"),
       currency: String(form.get("currency") ?? "USD"),
       manualValue: String(form.get("manualValue") ?? "0"),
+      expectedAnnualGrowthPercent: String(form.get("expectedAnnualGrowthPercent") ?? ""),
+      isIncomeProducing,
+      expectedMonthlyIncome: String(form.get("expectedMonthlyIncome") ?? ""),
       accountNote: String(form.get("accountNote") ?? ""),
       notes: String(form.get("notes") ?? ""),
     });
@@ -712,6 +938,28 @@ function ManualAssetForm({
         <Field label="Category"><Select name="manualType" options={manualAssetTypeOptions} defaultValue={asset?.manualType ?? "CASH"} /></Field>
         <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={asset?.currency ?? "USD"} /></Field>
         <Field label="Value"><input name="manualValue" type="number" step="0.01" min="0" className={fieldClass} defaultValue={asset?.manualValue ?? ""} required /></Field>
+        <Field label="Annual growth %"><input name="expectedAnnualGrowthPercent" type="number" step="0.01" className={fieldClass} defaultValue={asset?.expectedAnnualGrowthPercent ?? ""} placeholder="0.00" /></Field>
+        <label className="flex items-center gap-3 rounded-[18px] border border-white/10 bg-black/10 px-3 py-2 text-sm text-zinc-300">
+          <input
+            name="isIncomeProducing"
+            type="checkbox"
+            checked={isIncomeProducing}
+            onChange={(event) => setIsIncomeProducing(event.target.checked)}
+          />
+          Income producing
+        </label>
+        <Field label="Monthly income">
+          <input
+            name="expectedMonthlyIncome"
+            type="number"
+            step="0.01"
+            min="0"
+            className={fieldClass}
+            defaultValue={asset?.expectedMonthlyIncome ?? ""}
+            disabled={!isIncomeProducing}
+            placeholder="0.00"
+          />
+        </Field>
         <Field label="Account note"><input name="accountNote" className={fieldClass} defaultValue={asset?.accountNote ?? ""} /></Field>
       </div>
       <Field label="Notes"><textarea name="notes" className={textAreaClass} defaultValue={asset?.notes ?? ""} /></Field>
@@ -738,6 +986,7 @@ function LiabilityForm({
       type: String(form.get("type") ?? "OTHER"),
       currency: String(form.get("currency") ?? "USD"),
       currentBalance: String(form.get("currentBalance") ?? "0"),
+      payoffMonths: String(form.get("payoffMonths") ?? ""),
       accountNote: String(form.get("accountNote") ?? ""),
       notes: String(form.get("notes") ?? ""),
     });
@@ -750,6 +999,7 @@ function LiabilityForm({
         <Field label="Type"><Select name="type" options={liabilityTypeOptions} defaultValue={liability?.type ?? "OTHER"} /></Field>
         <Field label="Currency"><Select name="currency" options={currencyOptions} defaultValue={liability?.currency ?? "USD"} /></Field>
         <Field label="Balance"><input name="currentBalance" type="number" step="0.01" min="0" className={fieldClass} defaultValue={liability?.currentBalance ?? ""} required /></Field>
+        <Field label="Payoff months"><input name="payoffMonths" type="number" min="1" step="1" className={fieldClass} defaultValue={liability?.payoffMonths ?? ""} placeholder="Optional" /></Field>
         <Field label="Account note"><input name="accountNote" className={fieldClass} defaultValue={liability?.accountNote ?? ""} /></Field>
       </div>
       <Field label="Notes"><textarea name="notes" className={textAreaClass} defaultValue={liability?.notes ?? ""} /></Field>

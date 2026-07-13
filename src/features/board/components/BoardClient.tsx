@@ -6,6 +6,8 @@ import {
   closestCorners,
   DndContext,
   DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   useDroppable,
@@ -116,6 +118,7 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
     () => false,
   );
   const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+  const [activeDragTaskId, setActiveDragTaskId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -161,8 +164,24 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
     return null;
   }
 
+  function findTaskWithColumn(taskId: string, columns = data.columns) {
+    for (const column of columns) {
+      const task = column.tasks.find((item) => item.id === taskId);
+      if (task) {
+        return { task, column };
+      }
+    }
+
+    return null;
+  }
+
+  function handleDragStart(event: DragStartEvent) {
+    setActiveDragTaskId(String(event.active.id));
+  }
+
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
+    setActiveDragTaskId(null);
 
     if (!over || active.id === over.id) {
       return;
@@ -238,6 +257,8 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
     });
   }
 
+  const activeDragTask = activeDragTaskId ? findTaskWithColumn(activeDragTaskId) : null;
+
   return (
     <>
       <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -273,7 +294,9 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
         <DndContext
           sensors={sensors}
           collisionDetection={closestCorners}
+          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveDragTaskId(null)}
         >
           <div className="grid gap-4 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
             {data.columns.map((column) => (
@@ -287,6 +310,14 @@ export function BoardClient({ initialData }: { initialData: BoardPageData }) {
               />
             ))}
           </div>
+          <DragOverlay>
+            {activeDragTask ? (
+              <TaskDragOverlay
+                task={activeDragTask.task}
+                column={activeDragTask.column}
+              />
+            ) : null}
+          </DragOverlay>
         </DndContext>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[repeat(auto-fit,minmax(280px,1fr))]">
@@ -364,8 +395,10 @@ function BoardColumnView({
   return (
     <section
       ref={setNodeRef}
-      className={`panel min-h-[280px] rounded-[28px] p-4 transition ${
-        isOver ? "border-white/45" : ""
+      className={`panel min-h-[280px] rounded-[28px] p-4 transition duration-150 ${
+        isOver
+          ? "border-white/45 bg-white/[0.025] shadow-[0_0_34px_rgba(255,255,255,0.08)]"
+          : ""
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -480,18 +513,41 @@ function SortableTaskCard({
         backgroundColor: hexToRgba(column.cardColor, column.cardOpacity),
       }}
       className={`rounded-[18px] border border-white/12 p-3 shadow-[0_14px_34px_rgba(0,0,0,0.22)] transition ${
-        isDragging ? "scale-[1.015] border-white/45 opacity-80" : "hover:border-white/32"
+        isDragging
+          ? "scale-[0.98] border-white/35 opacity-35"
+          : "hover:border-white/32"
       }`}
     >
       <button
         type="button"
         onClick={onOpen}
-        className="block w-full cursor-pointer rounded-[14px] text-left transition active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
+        className="block w-full cursor-grab touch-none rounded-[14px] text-left transition active:cursor-grabbing active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white/50"
         {...attributes}
         {...listeners}
       >
         <TaskCardContent task={task} completedChecklist={completedChecklist} />
       </button>
+    </article>
+  );
+}
+
+function TaskDragOverlay({
+  task,
+  column,
+}: {
+  task: BoardTask;
+  column: BoardColumn;
+}) {
+  const completedChecklist = task.checklistItems.filter((item) => item.completed).length;
+
+  return (
+    <article
+      style={{
+        backgroundColor: hexToRgba(column.cardColor, Math.max(column.cardOpacity, 0.08)),
+      }}
+      className="w-[min(330px,calc(100vw-32px))] rotate-[1.5deg] cursor-grabbing rounded-[18px] border border-white/45 p-3 shadow-[0_24px_70px_rgba(0,0,0,0.48),0_0_34px_rgba(255,255,255,0.12)] backdrop-blur-xl"
+    >
+      <TaskCardContent task={task} completedChecklist={completedChecklist} />
     </article>
   );
 }
