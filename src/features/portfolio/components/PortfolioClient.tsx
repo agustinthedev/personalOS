@@ -928,8 +928,9 @@ function buildSimulation({
   const allAssets = [...data.marketAssets, ...data.manualAssets];
   const selectedAssets =
     category === "All" ? allAssets : allAssets.filter((asset) => asset.visualCategory === category);
+  const selectedLiabilities = category === "All" ? data.liabilities : [];
   const baseAssets = selectedAssets.reduce((sum, asset) => sum + asset.displayValue, 0);
-  const currentLiabilities = data.liabilities.reduce((sum, liability) => sum + liability.displayBalance, 0);
+  const currentLiabilities = selectedLiabilities.reduce((sum, liability) => sum + liability.displayBalance, 0);
   const months = Array.from({ length: Math.floor(horizonMonths / 6) + 1 }, (_, index) => index * 6)
     .filter((month) => month <= horizonMonths);
   if (!months.includes(horizonMonths)) {
@@ -952,7 +953,7 @@ function buildSimulation({
           return sum + asset.displayMonthlyIncome * getSimulationActiveMonths(asset.maturityDate, month);
         }, 0)
       : 0;
-    const liabilities = data.liabilities.reduce((sum, liability) => {
+    const liabilities = selectedLiabilities.reduce((sum, liability) => {
       if (!includePayoff || !liability.payoffMonths || liability.payoffMonths <= 0) {
         return sum + liability.displayBalance;
       }
