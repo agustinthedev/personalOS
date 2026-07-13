@@ -49,12 +49,12 @@ Portfolio provider variables:
 ```env
 MARKET_PRICE_API_KEY=""
 MARKET_PRICE_API_BASE_URL=""
-CRYPTO_PRICE_API_BASE_URL=""
+CRYPTO_PRICE_API_BASE_URL="https://api.coingecko.com/api/v3/simple/price"
 COMMODITY_PRICE_API_BASE_URL=""
 FX_RATE_API_BASE_URL="https://open.er-api.com/v6/latest"
 ```
 
-`FX_RATE_API_BASE_URL` uses ExchangeRate-API's open endpoint by default. If no live FX provider or cached rate is available, Portfolio falls back to a local USD/UYU rate so the app remains usable.
+`CRYPTO_PRICE_API_BASE_URL` uses CoinGecko's Simple Price endpoint by default for common crypto symbols. `FX_RATE_API_BASE_URL` uses ExchangeRate-API's open endpoint by default. If no live FX provider or cached rate is available, Portfolio falls back to a local USD/UYU rate so the app remains usable.
 
 ## Project Structure
 

@@ -20,6 +20,29 @@ type RateResult = {
 };
 
 const fallbackUsdUyuRate = 40;
+const defaultCryptoPriceApiBaseUrl = "https://api.coingecko.com/api/v3/simple/price";
+const coinGeckoIdsBySymbol: Record<string, string> = {
+  ADA: "cardano",
+  AVAX: "avalanche-2",
+  BCH: "bitcoin-cash",
+  BNB: "binancecoin",
+  BTC: "bitcoin",
+  DOGE: "dogecoin",
+  DOT: "polkadot",
+  ETH: "ethereum",
+  LINK: "chainlink",
+  LTC: "litecoin",
+  MATIC: "matic-network",
+  POL: "polygon-ecosystem-token",
+  RAY: "raydium",
+  SOL: "solana",
+  TON: "the-open-network",
+  TRX: "tron",
+  UNI: "uniswap",
+  USDC: "usd-coin",
+  USDT: "tether",
+  XRP: "ripple",
+};
 
 export function toNumber(value: Prisma.Decimal | number | string | null | undefined) {
   if (value === null || value === undefined) {
@@ -80,21 +103,65 @@ async function fetchJsonPrice(url: string): Promise<number | null> {
   return null;
 }
 
-export async function getCryptoPrice(symbol: string): Promise<PriceResult> {
-  const baseUrl = process.env.CRYPTO_PRICE_API_BASE_URL;
-  const normalized = normalizeSymbol(symbol);
+function buildProviderUrl(baseUrl: string, symbol: string) {
+  const trimmed = baseUrl.replace(/\/$/, "");
+  const coinGeckoId = coinGeckoIdsBySymbol[symbol] ?? symbol.toLowerCase();
 
-  if (!baseUrl) {
+  if (trimmed.includes("{symbol}") || trimmed.includes("{id}")) {
+    return trimmed
+      .replaceAll("{symbol}", encodeURIComponent(symbol))
+      .replaceAll("{id}", encodeURIComponent(coinGeckoId));
+  }
+
+  return `${trimmed}?symbol=${encodeURIComponent(symbol)}`;
+}
+
+function isCoinGeckoSimplePriceUrl(baseUrl: string) {
+  return baseUrl.includes("api.coingecko.com") && baseUrl.includes("/simple/price");
+}
+
+async function fetchCoinGeckoSimplePrice(baseUrl: string, symbol: string): Promise<PriceResult> {
+  const coinGeckoId = coinGeckoIdsBySymbol[symbol];
+
+  if (!coinGeckoId) {
     return {
       price: null,
       currency: "USD",
       source: "cache",
-      warning: `No crypto price provider configured for ${normalized}.`,
+      warning: `No CoinGecko id mapping configured for ${symbol}.`,
     };
   }
 
+  const url = new URL(baseUrl);
+  url.searchParams.set("ids", coinGeckoId);
+  url.searchParams.set("vs_currencies", "usd");
+
+  const response = await fetch(url, { next: { revalidate: 0 } });
+
+  if (!response.ok) {
+    throw new Error(`Provider returned ${response.status}`);
+  }
+
+  const payload = (await response.json()) as Record<string, Record<string, unknown> | undefined>;
+  const price = Number(payload[coinGeckoId]?.usd);
+
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new Error("Provider response did not include a usable USD price");
+  }
+
+  return { price, currency: "USD", source: "COINGECKO" };
+}
+
+export async function getCryptoPrice(symbol: string): Promise<PriceResult> {
+  const baseUrl = process.env.CRYPTO_PRICE_API_BASE_URL || defaultCryptoPriceApiBaseUrl;
+  const normalized = normalizeSymbol(symbol);
+
   try {
-    const url = `${baseUrl.replace(/\/$/, "")}?symbol=${encodeURIComponent(normalized)}`;
+    if (isCoinGeckoSimplePriceUrl(baseUrl)) {
+      return fetchCoinGeckoSimplePrice(baseUrl, normalized);
+    }
+
+    const url = buildProviderUrl(baseUrl, normalized);
     return { price: await fetchJsonPrice(url), currency: "USD", source: "CRYPTO_PRICE_API" };
   } catch (error) {
     return {

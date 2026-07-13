@@ -843,23 +843,30 @@ function ScenarioBarChart({
   title: string;
 }) {
   const maxIncome = Math.max(...points.map((point) => point.projectedIncome), 1);
+  const hasIncome = points.some((point) => point.projectedIncome > 0);
 
   return (
     <article className="rounded-[24px] border border-white/10 bg-white/[0.014] p-4">
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-[0.16em] text-zinc-400">{title}</h3>
       <div className="bar-grid flex h-60 items-end gap-2 rounded-[20px] border border-white/10 bg-black/10 p-4">
-        {points.filter((point) => point.month > 0).map((point) => (
-          <div key={point.month} className="group relative flex flex-1 flex-col items-center justify-end gap-2">
-            <div
-              className="w-full rounded-t bg-emerald-200/75 transition group-hover:bg-emerald-100"
-              style={{ height: `${Math.max(4, (point.projectedIncome / maxIncome) * 100)}%` }}
-            />
-            <span className="font-mono text-[10px] text-zinc-500">{point.label}</span>
-            <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100">
-              {formatMoney(point.projectedIncome, currency)}
-            </span>
+        {hasIncome ? (
+          points.filter((point) => point.month > 0).map((point) => (
+            <div key={point.month} className="group relative flex h-full flex-1 flex-col items-center justify-end gap-2">
+              <div
+                className="min-h-1 w-full rounded-t bg-emerald-200/75 transition group-hover:bg-emerald-100"
+                style={{ height: `${Math.max(4, (point.projectedIncome / maxIncome) * 100)}%` }}
+              />
+              <span className="font-mono text-[10px] text-zinc-500">{point.label}</span>
+              <span className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-xl border border-white/14 bg-zinc-950/95 px-3 py-2 text-xs text-zinc-100 opacity-0 shadow-[0_12px_34px_rgba(0,0,0,0.42)] backdrop-blur transition group-hover:opacity-100">
+                {formatMoney(point.projectedIncome, currency)}
+              </span>
+            </div>
+          ))
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-center text-sm text-zinc-500">
+            No projected income for the current scenario.
           </div>
-        ))}
+        )}
       </div>
     </article>
   );
