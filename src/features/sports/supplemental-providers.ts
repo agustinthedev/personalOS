@@ -127,6 +127,7 @@ export class EspnUruguayProvider {
       `https://site.api.espn.com/apis/site/v2/sports/soccer/uru.1/scoreboard?dates=${from}-${until}&region=uy&lang=es`,
     );
     const parsed = espnPayloadSchema.parse(payload);
+    assertEspnLeague(parsed, "uru.1");
     const competition = uruguayCompetition();
     return {
       competitions: [competition],
@@ -145,26 +146,28 @@ export class EspnNbaProvider {
     const until = compactDate(
       dateOffset(Math.max(sportsConfig().upcomingWindowDays, 30)),
     );
-    const sources = [
-      {
-        slug: "nba",
-        competition: nbaCompetition("nba", "NBA"),
-      },
-      {
-        slug: "nba-summer-las-vegas",
-        competition: nbaCompetition(
-          "nba-summer-las-vegas",
-          "NBA Summer League",
-        ),
-      },
-    ];
+    const directory = espnLeagueDirectorySchema.parse(
+      await requestJson(
+        "https://site.api.espn.com/apis/site/v2/leagues/dropdown?region=uy&lang=es&sport=basketball",
+      ),
+    );
+    const sources = selectNbaScheduleSources(directory.leagues).map((source) => ({
+      ...source,
+      competition: nbaCompetition(source.slug, source.name),
+    }));
+    if (!sources.some((source) => source.slug === "nba")) {
+      throw new Error("ESPN NBA schedule directory is missing the primary NBA feed.");
+    }
     const payloads = await Promise.all(
       sources.map(async (source) => ({
         ...source,
-        payload: espnPayloadSchema.parse(
-          await requestJson(
-            `https://site.api.espn.com/apis/site/v2/sports/basketball/${source.slug}/scoreboard?dates=${from}-${until}&region=uy&lang=es`,
+        payload: assertEspnLeague(
+          espnPayloadSchema.parse(
+            await requestJson(
+              `https://site.api.espn.com/apis/site/v2/sports/basketball/${source.slug}/scoreboard?dates=${from}-${until}&region=uy&lang=es`,
+            ),
           ),
+          source.slug,
         ),
       })),
     );
@@ -179,6 +182,25 @@ export class EspnNbaProvider {
       ),
     };
   }
+}
+
+export function selectNbaScheduleSources(
+  leagues: Array<{ slug: string; name: string }>,
+) {
+  return leagues
+    .filter(
+      (league) =>
+        league.slug === "nba" || league.slug.startsWith("nba-summer-"),
+    )
+    .filter(
+      (league, index, all) =>
+        all.findIndex((candidate) => candidate.slug === league.slug) === index,
+    )
+    .sort((left, right) => {
+      if (left.slug === "nba") return -1;
+      if (right.slug === "nba") return 1;
+      return left.slug.localeCompare(right.slug);
+    });
 }
 
 export class SportSrcBoxingProvider {
@@ -323,7 +345,19 @@ function normalizePadelTournamentStart(
   };
 }
 
+const espnLeagueSchema = z
+  .object({
+    name: z.string(),
+    slug: z.string(),
+  })
+  .passthrough();
+
+const espnLeagueDirectorySchema = z.object({
+  leagues: z.array(espnLeagueSchema),
+});
+
 const espnPayloadSchema = z.object({
+  leagues: z.array(espnLeagueSchema).min(1),
   events: z.array(
     z
       .object({
@@ -375,6 +409,16 @@ const espnPayloadSchema = z.object({
       .passthrough(),
   ),
 });
+
+function assertEspnLeague<T extends z.infer<typeof espnPayloadSchema>>(
+  payload: T,
+  expectedSlug: string,
+) {
+  if (!payload.leagues.some((league) => league.slug === expectedSlug)) {
+    throw new Error(`ESPN returned an unexpected schedule for ${expectedSlug}.`);
+  }
+  return payload;
+}
 
 function uruguayCompetition(): NormalizedCompetition {
   return {

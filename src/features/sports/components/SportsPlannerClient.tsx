@@ -97,7 +97,14 @@ export function SportsPlannerClient({ initialData }: { initialData: SportsDataRe
           await loadStoredData();
         }
         setToasts((items) => items.filter((item) => item.tone !== "loading"));
-        addToast("success", "Sports schedules updated.");
+        if (result.status === "partial_success") {
+          addToast(
+            "warning",
+            "Schedules updated with coverage gaps. Cached data was kept for unavailable sources.",
+          );
+        } else {
+          addToast("success", "Sports schedules updated.");
+        }
       } catch {
         setToasts((items) => items.filter((item) => item.tone !== "loading"));
         addToast(
@@ -351,6 +358,9 @@ export function SportsPlannerClient({ initialData }: { initialData: SportsDataRe
               : "No successful refresh yet"}
           </span>
           {data.sync.isStale ? <span className="text-amber-200">Cached data is stale</span> : null}
+          {data.sync.partialFailure ? (
+            <span className="text-amber-200">Some schedule sources need attention</span>
+          ) : null}
           <span>{data.capabilities.liveSports.length} connected sports</span>
         </div>
         <div className="my-4 h-px bg-white/10" />

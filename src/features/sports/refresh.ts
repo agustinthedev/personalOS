@@ -97,7 +97,8 @@ function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
     }
     if (
       scope.sport === "basketball" &&
-      ["nba", "nba-summer-las-vegas"].includes(scope.competitionExternalId)
+      (scope.competitionExternalId === "nba" ||
+        scope.competitionExternalId.startsWith("nba-summer-"))
     ) {
       return [refreshEspnNba()];
     }

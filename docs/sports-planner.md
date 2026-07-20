@@ -102,6 +102,12 @@ event is added.
 ## Known limitations
 
 - TheSportsDB free responses are intentionally capped, so coverage is broad but not exhaustive.
+- NBA coverage is discovered from ESPN's Uruguay league directory on every refresh. The primary
+  NBA feed and every current `nba-summer-*` feed are fetched and identity-checked, so newly listed
+  Summer League schedules do not require another hardcoded slug.
+- Uruguayan Primera Division is fetched from ESPN's dedicated `uru.1` feed in addition to the
+  worldwide TheSportsDB query. If a required ESPN feed fails or changes identity, the refresh is
+  marked partial and the UI warns that some schedule sources need attention while retaining cache.
 - Streaming badges are derived automatically from broadcaster names supplied by each schedule
   provider. ESPN channels map to Disney+ Premium in Uruguay. DAZN is shown only when the source
   explicitly identifies free or freemium access, and YouTube TV or paid YouTube listings are
