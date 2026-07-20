@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/features/sports/*.test.ts",
     "prisma:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "article:generate": "tsx scripts/generate-daily-article.ts"

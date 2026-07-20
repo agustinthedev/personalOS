@@ -351,3 +351,95 @@ enum SnapshotSource {
   AUTO
   MANUAL
 }
+
+model SportsCompetition {
+  id                   String        @id @default(cuid())
+  provider             String
+  externalId           String
+  sport                String
+  name                 String
+  shortName            String?
+  competitionType      String        @default("other")
+  countryCode          String?
+  countryName          String?
+  region               String?
+  logoUrl              String?
+  currentSeason        String?
+  isActive             Boolean       @default(true)
+  isPreferredByDefault Boolean       @default(false)
+  providerUpdatedAt    DateTime?
+  fetchedAt            DateTime
+  events               SportsEvent[]
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([sport, isActive])
+  @@index([sport, isPreferredByDefault])
+  @@index([countryName])
+}
+
+model SportsEvent {
+  id                 String             @id @default(cuid())
+  provider           String
+  externalId         String
+  sport              String
+  competitionId      String?
+  competition        SportsCompetition? @relation(fields: [competitionId], references: [id], onDelete: SetNull)
+  stage              String?
+  round              String?
+  participants       String
+  startsAtUtc        DateTime?
+  endsAtUtc          DateTime?
+  originalTimezone   String?
+  timeStatus         String             @default("tbc")
+  status             String             @default("scheduled")
+  venue              String?
+  location           String?
+  broadcastInfo      String?
+  sourceUrl          String?
+  providerUpdatedAt  DateTime?
+  fetchedAt          DateTime
+  lastSeenAt         DateTime
+  missingSince       DateTime?
+  rawProviderData    String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([provider, externalId])
+  @@index([sport, startsAtUtc])
+  @@index([competitionId, startsAtUtc])
+  @@index([status, startsAtUtc])
+}
+
+model SportsSyncState {
+  id               String   @id @default(cuid())
+  provider         String
+  sport            String?
+  scopeKey         String
+  refreshStatus    String   @default("idle")
+  lastAttemptAt    DateTime?
+  lastSuccessAt    DateTime?
+  refreshStartedAt DateTime?
+  lockExpiresAt    DateTime?
+  lastError        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([provider, scopeKey])
+  @@index([scopeKey, refreshStatus])
+  @@index([lockExpiresAt])
+}
+
+model SportsPreference {
+  id                         String   @id @default(cuid())
+  profileKey                 String   @unique @default("default")
+  preferredSports            String
+  preferredCompetitionIds    String
+  defaultCompetitionMode     String   @default("preferred")
+  lastSelectedSport          String?
+  lastSelectedCompetitionIds String
+  timezone                   String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+}

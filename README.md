@@ -7,6 +7,8 @@ Current mini apps:
 - `Daily Blog`: generates and stores short-form morning readings.
 - `Board`: a personal kanban board with columns, categories, checklists, comments, archives, and drag-and-drop task movement.
 - `Portfolio`: tracks assets, market investments, liabilities, net worth history, and projection scenarios.
+- `Sports Planner`: caches upcoming football and basketball schedules, supports padel-ready
+  normalization, timezone-aware browsing, and Google/Outlook/ICS calendar export.
 
 ## Stack
 
@@ -86,6 +88,17 @@ Use only the files a feature needs. Routes in `src/app` should stay thin and imp
 - `/blog/[slug]`: article reading view.
 - `/board`: kanban board.
 - `/portfolio`: portfolio and net worth tracker.
+- `/sports`: upcoming sports events and calendar export.
+
+## Sports Planner
+
+Sports Planner uses a request-driven stale-while-revalidate cache. It reads normalized
+events from SQLite first, refreshes stale data only while the feature is being used, and
+prevents duplicate provider calls with expiring database locks. The default live source
+is TheSportsDB's public no-signup API for football and basketball; no API key setup is
+required. See [Sports Planner documentation](docs/sports-planner.md) for provider
+coverage, configuration, cache behavior, calendar integrations, limitations, and
+extension points.
 
 ## Portfolio
 

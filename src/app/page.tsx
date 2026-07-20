@@ -38,6 +38,14 @@ const apps = [
     accent: "from-emerald-200/65 to-sky-300/35",
     description: "Track assets, liabilities, investments, and net worth over time.",
   },
+  {
+    name: "Sports Planner",
+    href: "/sports",
+    status: "Live",
+    metric: "Schedules",
+    accent: "from-emerald-200/65 to-cyan-300/35",
+    description: "Discover events, filter schedules, and export them to your calendar.",
+  },
 ];
 
 const activityBars = [42, 68, 52, 76, 58, 86, 74, 92, 63, 80, 72, 88];
@@ -185,6 +193,12 @@ function TopBar() {
         >
           Open Portfolio
         </a>
+        <a
+          href="/sports"
+          className="h-9 rounded-[28px] bg-white px-4 py-2 text-sm font-semibold text-zinc-900 shadow-[0_0_28px_rgba(255,255,255,0.16)] transition hover:bg-zinc-100"
+        >
+          Open Sports
+        </a>
       </div>
     </div>
   );
@@ -197,7 +211,7 @@ function SideNav() {
       <div className="flex h-10 w-10 items-center justify-center rounded-[28px] bg-white text-sm font-black text-zinc-900 shadow-[0_0_26px_rgba(255,255,255,0.16)]">
         OS
       </div>
-      {["D", "B", "A", "S"].map((item) => (
+      {["D", "B", "A", "S", "P"].map((item) => (
         <div
           key={item}
           className="glass-button flex h-10 w-10 items-center justify-center rounded-[28px] text-xs font-semibold text-zinc-300"
