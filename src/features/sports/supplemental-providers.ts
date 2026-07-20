@@ -124,7 +124,7 @@ export class EspnUruguayProvider {
     const from = compactDate(dateOffset(0));
     const until = compactDate(dateOffset(Math.max(sportsConfig().upcomingWindowDays, 30)));
     const payload = await requestJson(
-      `https://site.api.espn.com/apis/site/v2/sports/soccer/uru.1/scoreboard?dates=${from}-${until}`,
+      `https://site.api.espn.com/apis/site/v2/sports/soccer/uru.1/scoreboard?dates=${from}-${until}&region=uy&lang=es`,
     );
     const parsed = espnPayloadSchema.parse(payload);
     const competition = uruguayCompetition();
@@ -163,7 +163,7 @@ export class EspnNbaProvider {
         ...source,
         payload: espnPayloadSchema.parse(
           await requestJson(
-            `https://site.api.espn.com/apis/site/v2/sports/basketball/${source.slug}/scoreboard?dates=${from}-${until}`,
+            `https://site.api.espn.com/apis/site/v2/sports/basketball/${source.slug}/scoreboard?dates=${from}-${until}&region=uy&lang=es`,
           ),
         ),
       })),
@@ -213,7 +213,7 @@ export class EspnUfcProvider {
     );
     const payload = ufcPayloadSchema.parse(
       await requestJson(
-        `https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=${from}-${until}`,
+        `https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=${from}-${until}&region=uy&lang=es`,
       ),
     );
     const competition = ufcCompetition();

@@ -102,7 +102,11 @@ event is added.
 ## Known limitations
 
 - TheSportsDB free responses are intentionally capped, so coverage is broad but not exhaustive.
-- Padel has no active live provider.
+- Streaming badges are derived automatically from broadcaster names supplied by each schedule
+  provider. ESPN channels map to Disney+ Premium in Uruguay. DAZN is shown only when the source
+  explicitly identifies free or freemium access, and YouTube TV or paid YouTube listings are
+  excluded. A missing badge means the provider did not supply enough reliable information, not
+  that the event is unavailable everywhere.
 - The app is currently single-profile because Personal OS has no authentication/user model.
 - Data does not refresh while nobody uses Sports Planner.
 - SQLite locking is distributed-safe for processes sharing this database file; a future

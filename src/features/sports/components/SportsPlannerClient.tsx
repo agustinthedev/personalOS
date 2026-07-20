@@ -17,6 +17,7 @@ import type {
   Sport,
   SportsDataResponse,
 } from "../types";
+import { viewingOptionLabels, viewingOptions } from "../viewing";
 
 type DateFilter = "today" | "tomorrow" | "7days" | "30days" | "all";
 type Toast = { id: number; tone: "loading" | "success" | "warning"; message: string };
@@ -628,6 +629,7 @@ function EventCard({
 }) {
   const google = googleCalendarUrl(event);
   const outlook = outlookCalendarUrl(event);
+  const watchOptions = viewingOptions(event.broadcast);
   return (
     <article className="panel-muted rounded-[26px] p-4 md:grid md:grid-cols-[auto_120px_minmax(0,1fr)_auto] md:items-center md:gap-4">
       <label className="flex h-10 w-10 items-center justify-center">
@@ -651,6 +653,9 @@ function EventCard({
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge label={titleCase(event.status)} tone={event.status} />
           <StatusBadge label={timeStatusLabel(event.timeStatus)} tone={event.timeStatus} />
+          {watchOptions.map((option) => (
+            <ViewingBadge key={option.id} label={option.label} detail={option.detail} />
+          ))}
           <span className="text-xs text-zinc-500">{sportLabel(event.sport)}</span>
         </div>
         <h3 className="mt-2 text-xl font-semibold text-zinc-50">{eventTitle(event)}</h3>
@@ -714,6 +719,7 @@ function DetailsModal({
   }, [onClose]);
 
   const source = safeHttpUrl(event.sourceUrl);
+  const watchOptions = viewingOptionLabels(event.broadcast);
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-3 backdrop-blur-md">
       <div
@@ -756,6 +762,7 @@ function DetailsModal({
           <Detail label="Original timezone" value={event.originalTimezone} />
           <Detail label="Event status" value={titleCase(event.status)} />
           <Detail label="Time status" value={timeStatusLabel(event.timeStatus)} />
+          <Detail label="Available on" value={watchOptions.join(", ")} />
           <Detail label="Broadcast" value={event.broadcast.join(", ")} />
           <Detail
             label="Provider update"
@@ -914,6 +921,17 @@ function StatusBadge({ label, tone }: { label: string; tone: string }) {
           ? "border-cyan-300/30 bg-cyan-300/10 text-cyan-100"
           : "border-white/15 bg-white/[0.035] text-zinc-200";
   return <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${className}`}>{label}</span>;
+}
+
+function ViewingBadge({ label, detail }: { label: string; detail: string }) {
+  return (
+    <span
+      title={detail}
+      className="rounded-full border border-emerald-200/25 bg-emerald-200/[0.08] px-2.5 py-1 text-[11px] font-semibold text-emerald-100"
+    >
+      {label}
+    </span>
+  );
 }
 
 async function savePreferences(value: Record<string, unknown>) {
