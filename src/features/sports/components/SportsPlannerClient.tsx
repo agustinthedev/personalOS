@@ -30,9 +30,7 @@ const primaryClass =
 
 export function SportsPlannerClient({ initialData }: { initialData: SportsDataResponse }) {
   const [data, setData] = useState(initialData);
-  const [sport, setSport] = useState<Sport>(
-    initialData.preferences.lastSelectedSport ?? "football",
-  );
+  const [sport, setSport] = useState<Sport>("football");
   const [competitionMode, setCompetitionMode] = useState<CompetitionMode>(
     initialData.preferences.defaultCompetitionMode,
   );
