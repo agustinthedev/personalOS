@@ -181,6 +181,53 @@ export class EspnNbaProvider {
   }
 }
 
+export class SportSrcBoxingProvider {
+  async getData() {
+    const competition = boxingCompetition();
+    const payload = sportSrcPayloadSchema.parse(
+      await requestJson(
+        "https://api.sportsrc.org/?data=matches&category=fight",
+      ),
+    );
+    const from = Date.now() - 86_400_000;
+    const until = Date.now() + 30 * 86_400_000;
+    return {
+      competitions: [competition],
+      events: payload.data
+        .filter(
+          (event) =>
+            event.date >= from &&
+            event.date <= until &&
+            !isMixedMartialArtsTitle(event.title),
+        )
+        .map((event) => normalizeBoxingEvent(event, competition)),
+    };
+  }
+}
+
+export class EspnUfcProvider {
+  async getData() {
+    const from = compactDate(dateOffset(-1));
+    const until = compactDate(
+      dateOffset(Math.max(sportsConfig().upcomingWindowDays, 30)),
+    );
+    const payload = ufcPayloadSchema.parse(
+      await requestJson(
+        `https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=${from}-${until}`,
+      ),
+    );
+    const competition = ufcCompetition();
+    return {
+      competitions: [competition],
+      events: payload.events.flatMap((event) =>
+        event.competitions
+          .map((fight) => normalizeUfcFight(event, fight, competition))
+          .filter((fight): fight is NormalizedEvent => Boolean(fight)),
+      ),
+    };
+  }
+}
+
 export class JolpicaF1Provider {
   async getData() {
     const year = new Date().getUTCFullYear();
@@ -401,6 +448,182 @@ function normalizeEspnTeamEvent(
       detail.broadcasts?.flatMap((broadcast) => broadcast.names || []) || [],
     sourceUrl: safeUrl(sourceUrl),
     rawProviderData: event,
+  };
+}
+
+const sportSrcEventSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    date: z.number(),
+    teams: z
+      .object({
+        home: z.object({ name: z.string().nullable().optional() }),
+        away: z.object({ name: z.string().nullable().optional() }),
+      })
+      .optional(),
+  })
+  .passthrough();
+
+const sportSrcPayloadSchema = z.object({
+  success: z.boolean(),
+  data: z.array(sportSrcEventSchema),
+});
+
+function boxingCompetition(): NormalizedCompetition {
+  return {
+    provider: "sportsrc",
+    externalId: "boxing",
+    sport: "boxing",
+    name: "Professional Boxing",
+    shortName: "Boxing",
+    competitionType: "combat sport",
+    region: "International",
+    currentSeason: String(new Date().getUTCFullYear()),
+    isPreferredByDefault: true,
+  };
+}
+
+function normalizeBoxingEvent(
+  event: z.infer<typeof sportSrcEventSchema>,
+  competition: NormalizedCompetition,
+): NormalizedEvent {
+  const explicitNames = [event.teams?.home.name, event.teams?.away.name].filter(
+    (name): name is string => Boolean(name),
+  );
+  const names = (explicitNames.length >= 2 ? explicitNames : event.title
+    .split(/\s+(?:vs\.?|v)\s+/i)
+    .map((name) => name.trim())
+    .filter(Boolean));
+  const startsAtUtc = new Date(event.date);
+  return {
+    provider: "sportsrc",
+    externalId: event.id,
+    sport: "boxing",
+    competitionExternalId: competition.externalId,
+    competition,
+    participants: names.map((name) => ({ name, role: "player" })),
+    startsAtUtc,
+    originalTimezone: "UTC",
+    timeStatus: "confirmed",
+    status: "scheduled",
+    sourceUrl: `https://api.sportsrc.org/?data=detail&category=fight&id=${encodeURIComponent(event.id)}`,
+    rawProviderData: event,
+  };
+}
+
+function isMixedMartialArtsTitle(title: string) {
+  return /\b(?:ufc|pfl|mma|lfc|bellator|oktagon|cage|fighting championship|one championship)\b/i.test(
+    title,
+  );
+}
+
+const ufcStatusSchema = z.object({
+  state: z.string(),
+  completed: z.boolean(),
+  description: z.string(),
+});
+
+const ufcFightSchema = z
+  .object({
+    id: z.string(),
+    date: z.string(),
+    startDate: z.string().optional(),
+    timeValid: z.boolean().optional(),
+    type: z.object({ abbreviation: z.string().optional() }).optional(),
+    status: z.object({ type: ufcStatusSchema }),
+    venue: z
+      .object({
+        fullName: z.string().optional(),
+        address: z
+          .object({
+            city: z.string().optional(),
+            country: z.string().optional(),
+          })
+          .optional(),
+      })
+      .optional(),
+    competitors: z.array(
+      z.object({
+        id: z.string(),
+        athlete: z.object({
+          displayName: z.string(),
+          shortName: z.string().optional(),
+        }),
+      }),
+    ),
+    broadcasts: z
+      .array(z.object({ names: z.array(z.string()).optional() }).passthrough())
+      .optional(),
+  })
+  .passthrough();
+
+const ufcPayloadSchema = z.object({
+  events: z.array(
+    z
+      .object({
+        id: z.string(),
+        name: z.string(),
+        competitions: z.array(ufcFightSchema),
+        links: z
+          .array(z.object({ href: z.string(), rel: z.array(z.string()) }))
+          .optional(),
+      })
+      .passthrough(),
+  ),
+});
+
+function ufcCompetition(): NormalizedCompetition {
+  return {
+    provider: ESPN_PROVIDER,
+    externalId: "ufc",
+    sport: "ufc",
+    name: "UFC",
+    competitionType: "fight card",
+    countryName: "International",
+    region: "International",
+    currentSeason: String(new Date().getUTCFullYear()),
+    isPreferredByDefault: true,
+  };
+}
+
+function normalizeUfcFight(
+  event: z.infer<typeof ufcPayloadSchema>["events"][number],
+  fight: z.infer<typeof ufcFightSchema>,
+  competition: NormalizedCompetition,
+): NormalizedEvent | null {
+  if (fight.competitors.length < 2) return null;
+  const sourceUrl = event.links?.find((link) => link.rel.includes("summary"))?.href;
+  const startsAtUtc = parseDate(fight.startDate || fight.date);
+  return {
+    provider: ESPN_PROVIDER,
+    externalId: fight.id,
+    sport: "ufc",
+    competitionExternalId: competition.externalId,
+    competition,
+    stage: event.name,
+    round: fight.type?.abbreviation || undefined,
+    participants: fight.competitors.map((competitor) => ({
+      id: competitor.id,
+      name: competitor.athlete.displayName,
+      shortName: competitor.athlete.shortName,
+      role: "player",
+    })),
+    startsAtUtc,
+    originalTimezone: startsAtUtc ? "UTC" : undefined,
+    timeStatus: fight.timeValid === false ? "tbc" : "not_before",
+    status: espnStatus(fight.status.type),
+    venue: fight.venue?.fullName,
+    location: [
+      fight.venue?.address?.city,
+      fight.venue?.address?.country,
+    ]
+      .filter(Boolean)
+      .join(", "),
+    broadcast:
+      fight.broadcasts?.flatMap((broadcast) => broadcast.names || []) || [],
+    sourceUrl: safeUrl(sourceUrl),
+    rawProviderData: fight,
   };
 }
 

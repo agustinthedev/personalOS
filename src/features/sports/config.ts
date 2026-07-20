@@ -56,12 +56,14 @@ export const DEFAULT_EVENT_DURATION_MINUTES: Record<Sport, number> = {
   basketball: 150,
   padel: 150,
   formula1: 180,
+  boxing: 240,
+  ufc: 360,
 };
 
 export function liveSports(): Sport[] {
   return process.env.PADEL_API_TOKEN
-    ? ["football", "basketball", "padel", "formula1"]
-    : ["football", "basketball", "formula1"];
+    ? ["football", "basketball", "padel", "formula1", "boxing", "ufc"]
+    : ["football", "basketball", "formula1", "boxing", "ufc"];
 }
 
 export function unavailableLiveSports(): Sport[] {

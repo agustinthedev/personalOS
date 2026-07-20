@@ -90,3 +90,14 @@ test("disables calendar actions for date-only TBC events", () => {
   assert.equal(googleCalendarUrl(dateOnly), null);
   assert.equal(outlookCalendarUrl(dateOnly), null);
 });
+
+test("uses combat-sport durations for calendar blocks", () => {
+  assert.equal(
+    eventEnd({ ...event, sport: "boxing" })?.toISOString(),
+    "2026-07-21T00:00:00.000Z",
+  );
+  assert.equal(
+    eventEnd({ ...event, sport: "ufc" })?.toISOString(),
+    "2026-07-21T02:00:00.000Z",
+  );
+});

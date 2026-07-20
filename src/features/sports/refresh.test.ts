@@ -26,6 +26,16 @@ test("validates global, sport, and scoped competition refresh locks", () => {
     type: "sport",
     sport: "formula1",
   });
+  assert.deepEqual(parseRefreshScope("boxing"), {
+    key: "boxing",
+    type: "sport",
+    sport: "boxing",
+  });
+  assert.deepEqual(parseRefreshScope("ufc"), {
+    key: "ufc",
+    type: "sport",
+    sport: "ufc",
+  });
   assert.deepEqual(parseRefreshScope("football:competition:4328"), {
     key: "football:competition:4328",
     type: "competition",

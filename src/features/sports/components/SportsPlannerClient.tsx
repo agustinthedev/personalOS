@@ -309,7 +309,16 @@ export function SportsPlannerClient({ initialData }: { initialData: SportsDataRe
             role="tablist"
             aria-label="Sports"
           >
-            {(["football", "basketball", "padel", "formula1"] as Sport[]).map((item) => (
+            {(
+              [
+                "football",
+                "basketball",
+                "padel",
+                "formula1",
+                "boxing",
+                "ufc",
+              ] as Sport[]
+            ).map((item) => (
               <button
                 key={item}
                 type="button"
@@ -1009,7 +1018,9 @@ function usesCompetitionFilter(sport: Sport) {
 }
 
 function sportLabel(sport: Sport) {
-  return sport === "formula1" ? "Formula 1" : titleCase(sport);
+  if (sport === "formula1") return "Formula 1";
+  if (sport === "ufc") return "UFC";
+  return titleCase(sport);
 }
 
 function slug(value: string) {

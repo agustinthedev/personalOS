@@ -5,6 +5,8 @@ import { TheSportsDbProvider } from "./provider";
 import {
   EspnUruguayProvider,
   EspnNbaProvider,
+  EspnUfcProvider,
+  SportSrcBoxingProvider,
   JolpicaF1Provider,
   PadelApiProvider,
 } from "./supplemental-providers";
@@ -22,11 +24,15 @@ export type RefreshScope =
 
 export function parseRefreshScope(value: string): RefreshScope | null {
   if (value === "all-supported") return { key: value, type: "all" };
-  if (["football", "basketball", "padel", "formula1"].includes(value)) {
+  if (
+    ["football", "basketball", "padel", "formula1", "boxing", "ufc"].includes(
+      value,
+    )
+  ) {
     return { key: value as Sport, type: "sport", sport: value as Sport };
   }
   const match =
-    /^(football|basketball|padel|formula1):competition:([A-Za-z0-9_.-]+)$/.exec(
+    /^(football|basketball|padel|formula1|boxing|ufc):competition:([A-Za-z0-9_.-]+)$/.exec(
       value,
     );
   if (!match) return null;
@@ -38,12 +44,13 @@ export function parseRefreshScope(value: string): RefreshScope | null {
   };
 }
 
-export async function refreshSports(scope: RefreshScope, force = false) {
+export async function refreshSports(scope: RefreshScope, _force = false) {
+  void _force;
   const lock = await acquireRefreshLock(scope);
   if (!lock) return { status: "already-refreshing" as const };
 
   try {
-    const results = await Promise.allSettled(refreshJobs(scope, force));
+    const results = await Promise.allSettled(refreshJobs(scope));
     const successes = results
       .filter(
         (result): result is PromiseFulfilledResult<RefreshResult> =>
@@ -83,7 +90,7 @@ export async function refreshSports(scope: RefreshScope, force = false) {
 
 type RefreshResult = { events: number; competitions: number };
 
-function refreshJobs(scope: RefreshScope, force: boolean): Promise<RefreshResult>[] {
+function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
   if (scope.type === "competition") {
     if (scope.sport === "football" && scope.competitionExternalId === "uru.1") {
       return [refreshEspnUruguay()];
@@ -95,29 +102,40 @@ function refreshJobs(scope: RefreshScope, force: boolean): Promise<RefreshResult
       return [refreshEspnNba()];
     }
     if (scope.sport === "football" || scope.sport === "basketball") {
-      return [refreshTheSportsDb(scope, force)];
+      return [refreshTheSportsDb(scope)];
     }
-    return scope.sport === "padel" ? [refreshPadel()] : [refreshFormula1()];
+    if (scope.sport === "padel") return [refreshPadel()];
+    if (scope.sport === "formula1") return [refreshFormula1()];
+    if (scope.sport === "boxing") return [refreshBoxing()];
+    return [refreshUfc()];
   }
 
   const requested =
     scope.type === "all"
-      ? (["football", "basketball", "padel", "formula1"] as Sport[])
+      ? ([
+          "football",
+          "basketball",
+          "padel",
+          "formula1",
+          "boxing",
+          "ufc",
+        ] as Sport[])
       : [scope.sport];
   const jobs: Promise<RefreshResult>[] = [];
   if (requested.some((sport) => sport === "football" || sport === "basketball")) {
-    jobs.push(refreshTheSportsDb(scope, force));
+    jobs.push(refreshTheSportsDb(scope));
   }
   if (requested.includes("football")) jobs.push(refreshEspnUruguay());
   if (requested.includes("basketball")) jobs.push(refreshEspnNba());
   if (requested.includes("padel")) jobs.push(refreshPadel());
   if (requested.includes("formula1")) jobs.push(refreshFormula1());
+  if (requested.includes("boxing")) jobs.push(refreshBoxing());
+  if (requested.includes("ufc")) jobs.push(refreshUfc());
   return jobs;
 }
 
 async function refreshTheSportsDb(
   scope: RefreshScope,
-  force: boolean,
 ): Promise<RefreshResult> {
   const provider = new TheSportsDbProvider();
   const catalogScope =
@@ -127,7 +145,7 @@ async function refreshTheSportsDb(
       : undefined;
   const shouldRefreshCatalog =
     scope.type !== "competition" &&
-    (force || (await catalogIsStale(catalogScope)));
+    (await catalogIsStale(catalogScope));
   let competitions = 0;
   if (shouldRefreshCatalog) {
     const catalog = await provider.getCompetitions(catalogScope);
@@ -180,6 +198,20 @@ async function refreshEspnNba(): Promise<RefreshResult> {
 
 async function refreshFormula1(): Promise<RefreshResult> {
   const result = await new JolpicaF1Provider().getData();
+  await upsertCompetitions(result.competitions);
+  await upsertEvents(result.events);
+  return { events: result.events.length, competitions: result.competitions.length };
+}
+
+async function refreshBoxing(): Promise<RefreshResult> {
+  const result = await new SportSrcBoxingProvider().getData();
+  await upsertCompetitions(result.competitions);
+  await upsertEvents(result.events);
+  return { events: result.events.length, competitions: result.competitions.length };
+}
+
+async function refreshUfc(): Promise<RefreshResult> {
+  const result = await new EspnUfcProvider().getData();
   await upsertCompetitions(result.competitions);
   await upsertEvents(result.events);
   return { events: result.events.length, competitions: result.competitions.length };

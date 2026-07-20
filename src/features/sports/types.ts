@@ -1,4 +1,11 @@
-export const sports = ["football", "basketball", "padel", "formula1"] as const;
+export const sports = [
+  "football",
+  "basketball",
+  "padel",
+  "formula1",
+  "boxing",
+  "ufc",
+] as const;
 export type Sport = (typeof sports)[number];
 export type CompetitionMode = "preferred" | "all";
 export type EventStatus =

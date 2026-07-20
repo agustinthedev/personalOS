@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { updateSportsPreferences } from "@/features/sports/data";
 
-const sportSchema = z.enum(["football", "basketball", "padel", "formula1"]);
+const sportSchema = z.enum([
+  "football",
+  "basketball",
+  "padel",
+  "formula1",
+  "boxing",
+  "ufc",
+]);
 const bodySchema = z.object({
   timezone: z.string().min(1).max(100).optional(),
   preferredSports: z.array(sportSchema).max(20).optional(),

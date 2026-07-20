@@ -16,7 +16,14 @@ export function eventEnd(event: EventView) {
 
 export function calendarDescription(event: EventView) {
   const rows = [
-    ["Sport", event.sport === "formula1" ? "Formula 1" : titleCase(event.sport)],
+    [
+      "Sport",
+      event.sport === "formula1"
+        ? "Formula 1"
+        : event.sport === "ufc"
+          ? "UFC"
+          : titleCase(event.sport),
+    ],
     ["Competition", event.competition?.name],
     ["Country", event.competition?.countryName],
     ["Stage", event.stage],

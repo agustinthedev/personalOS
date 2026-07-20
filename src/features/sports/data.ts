@@ -19,7 +19,14 @@ import type {
 } from "./types";
 
 const defaultPreferences: SportsPreferencesView = {
-  preferredSports: ["football", "basketball", "padel", "formula1"],
+  preferredSports: [
+    "football",
+    "basketball",
+    "padel",
+    "formula1",
+    "boxing",
+    "ufc",
+  ],
   preferredCompetitionIds: [],
   defaultCompetitionMode: "preferred",
   lastSelectedCompetitionIds: [],
