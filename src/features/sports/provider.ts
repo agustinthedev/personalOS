@@ -63,6 +63,7 @@ export interface SportsScheduleProvider {
   getUpcomingEvents(query: {
     sports: Sport[];
     competitionExternalId?: string;
+    force?: boolean;
   }): Promise<NormalizedEvent[]>;
   getCapabilities(): ProviderCapabilities;
 }
@@ -101,7 +102,9 @@ export class TheSportsDbProvider implements SportsScheduleProvider {
     }
 
     if (!sport) {
+      const discoveredIds = new Set(all.map((competition) => competition.externalId));
       for (const id of CORE_COMPETITION_IDS) {
+        if (discoveredIds.has(id)) continue;
         const payload = await this.request(`/lookupleague.php?id=${id}`);
         const parsed = z.array(leagueSchema).safeParse(payload.leagues ?? []);
         if (!parsed.success) throw new Error("Invalid core competition response.");
@@ -109,6 +112,7 @@ export class TheSportsDbProvider implements SportsScheduleProvider {
           const normalizedSport = providerSport(league.strSport);
           if (normalizedSport === "football" || normalizedSport === "basketball") {
             all.push(normalizeLeague(league, normalizedSport));
+            discoveredIds.add(league.idLeague);
           }
         }
       }
@@ -120,6 +124,7 @@ export class TheSportsDbProvider implements SportsScheduleProvider {
   async getUpcomingEvents(query: {
     sports: Sport[];
     competitionExternalId?: string;
+    force?: boolean;
   }) {
     if (query.competitionExternalId) {
       const payload = await this.request(
@@ -141,6 +146,7 @@ export class TheSportsDbProvider implements SportsScheduleProvider {
         const providerSport = sport === "football" ? "Soccer" : "Basketball";
         const payload = await this.request(
           `/eventsday.php?d=${dateValue}&s=${providerSport}`,
+          scheduleRequestRevalidateSeconds(day, Boolean(query.force)),
         );
         events.push(...this.normalizeEvents(payload.events ?? []));
       }
@@ -154,12 +160,17 @@ export class TheSportsDbProvider implements SportsScheduleProvider {
     return parsed.data.map(normalizeEvent).filter((event): event is NormalizedEvent => Boolean(event));
   }
 
-  private async request(path: string): Promise<Record<string, unknown>> {
+  private async request(
+    path: string,
+    revalidateSeconds?: number,
+  ): Promise<Record<string, unknown>> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 12_000);
     try {
       const response = await fetch(`${sportsConfig().apiBaseUrl}${path}`, {
-        cache: "no-store",
+        ...(revalidateSeconds
+          ? { next: { revalidate: revalidateSeconds } }
+          : { cache: "no-store" as const }),
         signal: controller.signal,
         headers: { Accept: "application/json" },
       });
@@ -172,6 +183,14 @@ export class TheSportsDbProvider implements SportsScheduleProvider {
       clearTimeout(timeout);
     }
   }
+}
+
+export function scheduleRequestRevalidateSeconds(
+  dayOffset: number,
+  force: boolean,
+) {
+  if (force || dayOffset < 2) return undefined;
+  return 6 * 60 * 60;
 }
 
 function normalizeLeague(

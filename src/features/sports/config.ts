@@ -61,6 +61,12 @@ export const DEFAULT_EVENT_DURATION_MINUTES: Record<Sport, number> = {
   ufc: 360,
 };
 
+export const STABLE_SCHEDULE_TTL_MINUTES: Partial<Record<Sport, number>> = {
+  formula1: 12 * 60,
+  boxing: 4 * 60,
+  ufc: 4 * 60,
+};
+
 export function liveSports(): Sport[] {
   return process.env.PADEL_API_TOKEN
     ? ["football", "basketball", "padel", "formula1", "boxing", "ufc"]
@@ -76,6 +82,10 @@ export function sportsConfig() {
     eventsTtlMinutes: positiveInt(process.env.SPORTS_EVENTS_REFRESH_TTL_MINUTES, 60),
     competitionsTtlHours: positiveInt(process.env.SPORTS_COMPETITIONS_REFRESH_TTL_HOURS, 24),
     lockMinutes: positiveInt(process.env.SPORTS_REFRESH_LOCK_MINUTES, 5),
+    manualRefreshCooldownSeconds: positiveInt(
+      process.env.SPORTS_MANUAL_REFRESH_COOLDOWN_SECONDS,
+      60,
+    ),
     upcomingWindowDays: Math.min(
       30,
       positiveInt(process.env.SPORTS_UPCOMING_WINDOW_DAYS, 7),

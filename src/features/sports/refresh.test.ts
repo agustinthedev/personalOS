@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { isDefaultPreferred, isFresh } from "./config";
-import { parseRefreshScope } from "./refresh";
+import { scheduleRequestRevalidateSeconds } from "./provider";
+import { parseRefreshScope, sourceScheduleIsFresh } from "./refresh";
 
 test("event and competition freshness uses last success and strict TTLs", () => {
   const now = new Date("2026-07-19T12:00:00.000Z");
@@ -49,4 +50,28 @@ test("NBA and broad football defaults remain centralized", () => {
   assert.equal(isDefaultPreferred("basketball", "NBA", "USA"), true);
   assert.equal(isDefaultPreferred("football", "Copa Libertadores", "South America"), true);
   assert.equal(isDefaultPreferred("football", "Uncommon League", "Iceland"), false);
+});
+
+test("stable schedules respect their source TTL unless a manual refresh is forced", () => {
+  const now = new Date("2026-07-22T12:00:00.000Z");
+  assert.equal(
+    sourceScheduleIsFresh(new Date("2026-07-22T08:01:00.000Z"), 240, false, now),
+    true,
+  );
+  assert.equal(
+    sourceScheduleIsFresh(new Date("2026-07-22T08:01:00.000Z"), 240, true, now),
+    false,
+  );
+  assert.equal(
+    sourceScheduleIsFresh(new Date("2026-07-22T08:00:00.000Z"), 240, false, now),
+    false,
+  );
+});
+
+test("reuses future daily schedules while keeping near-term and manual requests live", () => {
+  assert.equal(scheduleRequestRevalidateSeconds(0, false), undefined);
+  assert.equal(scheduleRequestRevalidateSeconds(1, false), undefined);
+  assert.equal(scheduleRequestRevalidateSeconds(2, false), 6 * 60 * 60);
+  assert.equal(scheduleRequestRevalidateSeconds(6, false), 6 * 60 * 60);
+  assert.equal(scheduleRequestRevalidateSeconds(6, true), undefined);
 });

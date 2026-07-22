@@ -1,5 +1,10 @@
 import { prisma } from "@/lib/db";
-import { isFresh, sportsConfig, SPORTS_PROVIDER } from "./config";
+import {
+  isFresh,
+  sportsConfig,
+  SPORTS_PROVIDER,
+  STABLE_SCHEDULE_TTL_MINUTES,
+} from "./config";
 import { markMissingEvents, upsertCompetitions, upsertEvents } from "./data";
 import { TheSportsDbProvider } from "./provider";
 import {
@@ -45,13 +50,12 @@ export function parseRefreshScope(value: string): RefreshScope | null {
   };
 }
 
-export async function refreshSports(scope: RefreshScope, _force = false) {
-  void _force;
-  const lock = await acquireRefreshLock(scope);
-  if (!lock) return { status: "already-refreshing" as const };
+export async function refreshSports(scope: RefreshScope, force = false) {
+  const lock = await acquireRefreshLock(scope, force);
+  if (lock !== "acquired") return { status: lock as "fresh" | "already-refreshing" };
 
   try {
-    const results = await Promise.allSettled(refreshJobs(scope));
+    const results = await Promise.allSettled(refreshJobs(scope, force));
     const successes = results
       .filter(
         (result): result is PromiseFulfilledResult<RefreshResult> =>
@@ -91,7 +95,7 @@ export async function refreshSports(scope: RefreshScope, _force = false) {
 
 type RefreshResult = { events: number; competitions: number };
 
-function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
+function refreshJobs(scope: RefreshScope, force: boolean): Promise<RefreshResult>[] {
   if (scope.type === "competition") {
     if (scope.sport === "football" && scope.competitionExternalId === "uru.1") {
       return [refreshEspnUruguay(), refreshFotMobTvGuide()];
@@ -101,17 +105,17 @@ function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
       (scope.competitionExternalId === "nba" ||
         scope.competitionExternalId.startsWith("nba-summer-"))
     ) {
-      return [refreshEspnNba()];
+      return [refreshEspnNba(force)];
     }
     if (scope.sport === "football" || scope.sport === "basketball") {
       return scope.sport === "football"
-        ? [refreshTheSportsDb(scope), refreshFotMobTvGuide()]
-        : [refreshTheSportsDb(scope)];
+        ? [refreshTheSportsDb(scope, force), refreshFotMobTvGuide()]
+        : [refreshTheSportsDb(scope, force)];
     }
     if (scope.sport === "padel") return [refreshPadel()];
-    if (scope.sport === "formula1") return [refreshFormula1()];
-    if (scope.sport === "boxing") return [refreshBoxing()];
-    return [refreshUfc()];
+    if (scope.sport === "formula1") return [refreshStableSchedule("formula1", force, refreshFormula1)];
+    if (scope.sport === "boxing") return [refreshStableSchedule("boxing", force, refreshBoxing)];
+    return [refreshStableSchedule("ufc", force, refreshUfc)];
   }
 
   const requested =
@@ -127,20 +131,27 @@ function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
       : [scope.sport];
   const jobs: Promise<RefreshResult>[] = [];
   if (requested.some((sport) => sport === "football" || sport === "basketball")) {
-    jobs.push(refreshTheSportsDb(scope));
+    jobs.push(refreshTheSportsDb(scope, force));
   }
   if (requested.includes("football")) jobs.push(refreshEspnUruguay());
   if (requested.includes("football")) jobs.push(refreshFotMobTvGuide());
-  if (requested.includes("basketball")) jobs.push(refreshEspnNba());
+  if (requested.includes("basketball")) jobs.push(refreshEspnNba(force));
   if (requested.includes("padel")) jobs.push(refreshPadel());
-  if (requested.includes("formula1")) jobs.push(refreshFormula1());
-  if (requested.includes("boxing")) jobs.push(refreshBoxing());
-  if (requested.includes("ufc")) jobs.push(refreshUfc());
+  if (requested.includes("formula1")) {
+    jobs.push(refreshStableSchedule("formula1", force, refreshFormula1));
+  }
+  if (requested.includes("boxing")) {
+    jobs.push(refreshStableSchedule("boxing", force, refreshBoxing));
+  }
+  if (requested.includes("ufc")) {
+    jobs.push(refreshStableSchedule("ufc", force, refreshUfc));
+  }
   return jobs;
 }
 
 async function refreshTheSportsDb(
   scope: RefreshScope,
+  force: boolean,
 ): Promise<RefreshResult> {
   const provider = new TheSportsDbProvider();
   const catalogScope =
@@ -166,6 +177,7 @@ async function refreshTheSportsDb(
     sports,
     competitionExternalId:
       scope.type === "competition" ? scope.competitionExternalId : undefined,
+    force,
   });
   await upsertEvents(events);
   if (events.length > 0) {
@@ -194,8 +206,10 @@ async function refreshEspnUruguay(): Promise<RefreshResult> {
   return { events: result.events.length, competitions: result.competitions.length };
 }
 
-async function refreshEspnNba(): Promise<RefreshResult> {
-  const result = await new EspnNbaProvider().getData();
+async function refreshEspnNba(force: boolean): Promise<RefreshResult> {
+  const result = await new EspnNbaProvider().getData({
+    forceDirectoryRefresh: force,
+  });
   await upsertCompetitions(result.competitions);
   await upsertEvents(result.events);
   return { events: result.events.length, competitions: result.competitions.length };
@@ -228,10 +242,116 @@ async function refreshUfc(): Promise<RefreshResult> {
   return { events: result.events.length, competitions: result.competitions.length };
 }
 
-async function acquireRefreshLock(scope: RefreshScope) {
+async function refreshStableSchedule(
+  sport: Extract<Sport, "formula1" | "boxing" | "ufc">,
+  force: boolean,
+  refresh: () => Promise<RefreshResult>,
+) {
+  const ttlMinutes = STABLE_SCHEDULE_TTL_MINUTES[sport];
+  if (!ttlMinutes) return refresh();
+  const scopeKey = `schedule:${sport}`;
+  const acquired = await acquireSourceRefreshLock(
+    sport,
+    scopeKey,
+    ttlMinutes,
+    force,
+  );
+  if (!acquired) return { events: 0, competitions: 0 };
+  try {
+    const result = await refresh();
+    await finishSourceRefresh(sport, scopeKey, "success", null);
+    return result;
+  } catch (error) {
+    await finishSourceRefresh(
+      sport,
+      scopeKey,
+      "failed",
+      error instanceof Error ? error.message : "Schedule provider refresh failed.",
+    );
+    throw error;
+  }
+}
+
+export function sourceScheduleIsFresh(
+  lastSuccessAt: Date | null | undefined,
+  ttlMinutes: number,
+  force: boolean,
+  now = new Date(),
+) {
+  return !force && isFresh(lastSuccessAt, ttlMinutes * 60_000, now);
+}
+
+async function acquireSourceRefreshLock(
+  provider: string,
+  scopeKey: string,
+  ttlMinutes: number,
+  force: boolean,
+) {
   const now = new Date();
+  const freshAfter = new Date(now.getTime() - ttlMinutes * 60_000);
   const lockExpiresAt = new Date(
     now.getTime() + sportsConfig().lockMinutes * 60_000,
+  );
+  await prisma.sportsSyncState.upsert({
+    where: { provider_scopeKey: { provider, scopeKey } },
+    create: { provider, scopeKey, sport: provider, refreshStatus: "idle" },
+    update: {},
+  });
+  const updated = await prisma.sportsSyncState.updateMany({
+    where: {
+      provider,
+      scopeKey,
+      AND: [
+        {
+          OR: [
+            { refreshStatus: { not: "refreshing" } },
+            { lockExpiresAt: null },
+            { lockExpiresAt: { lte: now } },
+          ],
+        },
+        ...(force
+          ? []
+          : [{ OR: [{ lastSuccessAt: null }, { lastSuccessAt: { lte: freshAfter } }] }]),
+      ],
+    },
+    data: {
+      refreshStatus: "refreshing",
+      lastAttemptAt: now,
+      refreshStartedAt: now,
+      lockExpiresAt,
+      lastError: null,
+    },
+  });
+  return updated.count === 1;
+}
+
+async function finishSourceRefresh(
+  provider: string,
+  scopeKey: string,
+  status: "success" | "failed",
+  lastError: string | null,
+) {
+  await prisma.sportsSyncState.update({
+    where: { provider_scopeKey: { provider, scopeKey } },
+    data: {
+      refreshStatus: status,
+      lastSuccessAt: status === "success" ? new Date() : undefined,
+      refreshStartedAt: null,
+      lockExpiresAt: null,
+      lastError,
+    },
+  });
+}
+
+async function acquireRefreshLock(scope: RefreshScope, force: boolean) {
+  const now = new Date();
+  const config = sportsConfig();
+  const freshnessMilliseconds = force
+    ? config.manualRefreshCooldownSeconds * 1_000
+    : config.eventsTtlMinutes * 60_000;
+  const freshAfter = new Date(now.getTime() - freshnessMilliseconds);
+  const lockExpiresAt = new Date(
+    now.getTime() + config.lockMinutes * 60_000,
   );
 
   await prisma.sportsSyncState.upsert({
@@ -256,6 +376,9 @@ async function acquireRefreshLock(scope: RefreshScope) {
         { lockExpiresAt: null },
         { lockExpiresAt: { lte: now } },
       ],
+      AND: [
+        { OR: [{ lastSuccessAt: null }, { lastSuccessAt: { lte: freshAfter } }] },
+      ],
     },
     data: {
       refreshStatus: "refreshing",
@@ -265,7 +388,20 @@ async function acquireRefreshLock(scope: RefreshScope) {
       lastError: null,
     },
   });
-  return updated.count === 1;
+  if (updated.count === 1) return "acquired" as const;
+  const state = await prisma.sportsSyncState.findUnique({
+    where: {
+      provider_scopeKey: { provider: SPORTS_PROVIDER, scopeKey: scope.key },
+    },
+  });
+  return sourceScheduleIsFresh(
+    state?.lastSuccessAt,
+    freshnessMilliseconds / 60_000,
+    false,
+    now,
+  )
+    ? ("fresh" as const)
+    : ("already-refreshing" as const);
 }
 
 async function finishRefresh(

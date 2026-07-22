@@ -11,15 +11,7 @@ const PADEL_PROVIDER = "padelapi";
 const ESPN_PROVIDER = "espn";
 const F1_PROVIDER = "jolpica";
 const FOTMOB_PROVIDER = "fotmob";
-
-const FOTMOB_URUGUAY_GUIDES = [
-  "disney-plus-premium",
-  "paramount-plus",
-  "amazon-prime-video",
-  "netflix",
-  "dazn-free",
-  "youtube",
-] as const;
+const FOTMOB_URUGUAY_TV_GUIDE = "https://www.fotmob.com/es/tv-guide/uy";
 
 const playerSchema = z.object({
   id: z.number(),
@@ -149,7 +141,7 @@ export class EspnUruguayProvider {
 }
 
 export class EspnNbaProvider {
-  async getData() {
+  async getData(options: { forceDirectoryRefresh?: boolean } = {}) {
     // ESPN groups late-night games by the local US schedule date, even when UTC
     // has already rolled into the following day.
     const from = compactDate(dateOffset(-1));
@@ -159,6 +151,8 @@ export class EspnNbaProvider {
     const directory = espnLeagueDirectorySchema.parse(
       await requestJson(
         "https://site.api.espn.com/apis/site/v2/leagues/dropdown?region=uy&lang=es&sport=basketball",
+        undefined,
+        options.forceDirectoryRefresh ? undefined : 6 * 60 * 60,
       ),
     );
     const sources = selectNbaScheduleSources(directory.leagues).map((source) => ({
@@ -196,48 +190,37 @@ export class EspnNbaProvider {
 
 export class FotMobUruguayTvProvider {
   async getData() {
-    const pages = await Promise.all(
-      FOTMOB_URUGUAY_GUIDES.map(async (guide) => ({
-        guide,
-        html: await requestText(`https://www.fotmob.com/es/tv-guide/uy/${guide}`),
-      })),
-    );
+    const html = await requestText(FOTMOB_URUGUAY_TV_GUIDE);
     const events = new Map<string, NormalizedEvent>();
 
-    for (const { guide, html } of pages) {
-      for (const listing of extractFotMobTvEvents(html)) {
-        const externalId = listing["@id"].split("#").pop() || listing["@id"];
-        const broadcasts = listing.broadcastEvent?.publishedOn?.map((service) =>
-          guide === "dazn-free" && /^dazn$/i.test(service.name)
-            ? "DAZN Free"
-            : guide === "youtube" && /^youtube$/i.test(service.name)
-              ? "YouTube Free"
-              : service.name,
-        ) ?? [];
-        const existing = events.get(externalId);
-        if (existing) {
-          existing.broadcast = [...new Set([...(existing.broadcast ?? []), ...broadcasts])];
-          continue;
-        }
-        const startsAtUtc = parseDate(listing.startDate);
-        if (!startsAtUtc) continue;
-        events.set(externalId, {
-          provider: FOTMOB_PROVIDER,
-          externalId,
-          sport: "football",
-          participants: [
-            { name: listing.homeTeam.name, role: "home" },
-            { name: listing.awayTeam.name, role: "away" },
-          ],
-          startsAtUtc,
-          originalTimezone: "UTC",
-          timeStatus: "confirmed",
-          status: "scheduled",
-          broadcast: broadcasts,
-          sourceUrl: safeUrl(listing.url || listing["@id"]),
-          rawProviderData: listing,
-        });
+    for (const listing of extractFotMobTvEvents(html)) {
+      const externalId = listing["@id"].split("#").pop() || listing["@id"];
+      const broadcasts = listing.broadcastEvent?.publishedOn?.map(
+        (service) => service.name,
+      ) ?? [];
+      const existing = events.get(externalId);
+      if (existing) {
+        existing.broadcast = [...new Set([...(existing.broadcast ?? []), ...broadcasts])];
+        continue;
       }
+      const startsAtUtc = parseDate(listing.startDate);
+      if (!startsAtUtc) continue;
+      events.set(externalId, {
+        provider: FOTMOB_PROVIDER,
+        externalId,
+        sport: "football",
+        participants: [
+          { name: listing.homeTeam.name, role: "home" },
+          { name: listing.awayTeam.name, role: "away" },
+        ],
+        startsAtUtc,
+        originalTimezone: "UTC",
+        timeStatus: "confirmed",
+        status: "scheduled",
+        broadcast: broadcasts,
+        sourceUrl: safeUrl(listing.url || listing["@id"]),
+        rawProviderData: listing,
+      });
     }
 
     return { competitions: [], events: [...events.values()] };
@@ -845,12 +828,18 @@ function normalizeF1Race(
   };
 }
 
-async function requestJson(url: string, headers?: Record<string, string>) {
+async function requestJson(
+  url: string,
+  headers?: Record<string, string>,
+  revalidateSeconds?: number,
+) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   try {
     const response = await fetch(url, {
-      cache: "no-store",
+      ...(revalidateSeconds
+        ? { next: { revalidate: revalidateSeconds } }
+        : { cache: "no-store" as const }),
       signal: controller.signal,
       headers: { Accept: "application/json", ...headers },
     });

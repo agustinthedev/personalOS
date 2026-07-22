@@ -59,12 +59,18 @@ SPORTS_API_BASE_URL="https://www.thesportsdb.com/api/v1/json/123"
 SPORTS_EVENTS_REFRESH_TTL_MINUTES="60"
 SPORTS_COMPETITIONS_REFRESH_TTL_HOURS="24"
 SPORTS_REFRESH_LOCK_MINUTES="5"
+SPORTS_MANUAL_REFRESH_COOLDOWN_SECONDS="60"
 SPORTS_UPCOMING_WINDOW_DAYS="7"
 SPORTS_PAST_RETENTION_DAYS="2"
 ```
 
 The free provider limit makes seven days the safe default ingestion window. It can be
 increased up to 30 days when a provider with suitable limits is configured.
+
+TheSportsDB requests for today and tomorrow always use live responses. Days three through
+seven use a six-hour server cache because those fixtures change less often; manual refreshes
+bypass that cache. This lowers a normal two-sport automatic refresh from 14 daily schedule
+requests to about four once the future-day cache is warm.
 
 Apply migrations with `npm run db:migrate` and regenerate the client with
 `npm run prisma:generate`.
@@ -110,7 +116,8 @@ event is added.
   marked partial and the UI warns that some schedule sources need attention while retaining cache.
 - FotMob's public Uruguay TV guide is used as a corroborating football source. When a provider
   supplies a shifted placeholder but the regional guide supplies a confirmed kickoff, Personal OS
-  keeps one event, uses the confirmed schedule, and merges the Uruguay broadcast services.
+  keeps one event, uses the confirmed schedule, and merges the Uruguay broadcast services. The
+  aggregate country guide supplies every channel in one request instead of querying each platform.
 - Verified regional rights add Disney+ Premium to Liga AUF Uruguaya, Formula 1, and supported
   Premier Padel events, and Paramount+ to UFC. Other events receive a badge only when a schedule
   or TV-guide source identifies one of the configured services; unknown rights are not guessed.
@@ -121,5 +128,9 @@ event is added.
   that the event is unavailable everywhere.
 - The app is currently single-profile because Personal OS has no authentication/user model.
 - Data does not refresh while nobody uses Sports Planner.
+- Automatic refreshes reuse ESPN's NBA league directory for six hours. Formula 1 is refreshed every
+  12 hours, while boxing and UFC are refreshed every four hours; their schedules change much less
+  often than match feeds. A manual Refresh bypasses these source TTLs, with a one-minute cooldown
+  that absorbs double clicks and immediate retries without making another provider request.
 - SQLite locking is distributed-safe for processes sharing this database file; a future
   multi-host deployment should use a shared database with the same conditional lock design.

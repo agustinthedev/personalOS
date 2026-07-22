@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  FotMobUruguayTvProvider,
   extractFotMobTvEvents,
   selectNbaScheduleSources,
 } from "./supplemental-providers";
@@ -44,4 +45,31 @@ test("extracts structured Uruguay TV listings", () => {
     events[0].broadcastEvent?.publishedOn?.map((service) => service.name),
     ["Disney+ Premium"],
   );
+});
+
+test("loads the aggregate Uruguay TV guide with one request", async () => {
+  const originalFetch = globalThis.fetch;
+  const requestedUrls: string[] = [];
+  globalThis.fetch = async (input) => {
+    requestedUrls.push(String(input));
+    return new Response(
+      `<script type="application/ld+json">${JSON.stringify({
+        "@type": "SportsEvent",
+        "@id": "https://www.fotmob.com/matches/example#123",
+        name: "Home vs Away",
+        startDate: "2026-07-26T21:30:00.000Z",
+        homeTeam: { name: "Home" },
+        awayTeam: { name: "Away" },
+        broadcastEvent: { publishedOn: [{ name: "Disney+ Premium" }] },
+      })}</script>`,
+      { status: 200 },
+    );
+  };
+  try {
+    const result = await new FotMobUruguayTvProvider().getData();
+    assert.equal(result.events.length, 1);
+    assert.deepEqual(requestedUrls, ["https://www.fotmob.com/es/tv-guide/uy"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
