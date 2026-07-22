@@ -1,3 +1,5 @@
+import type { EventView } from "./types";
+
 export type ViewingOption = {
   id: "disney-plus" | "paramount-plus" | "prime-video" | "netflix" | "dazn-free" | "youtube";
   label: string;
@@ -69,6 +71,32 @@ export function viewingOptions(broadcasts: string[]): ViewingOption[] {
 
 export function viewingOptionLabels(broadcasts: string[]) {
   return viewingOptions(broadcasts).map((option) => option.label);
+}
+
+export function viewingOptionsForEvent(event: EventView) {
+  return viewingOptions([...event.broadcast, ...regionalRights(event)]);
+}
+
+export function viewingOptionLabelsForEvent(event: EventView) {
+  return viewingOptionsForEvent(event).map((option) => option.label);
+}
+
+function regionalRights(event: EventView) {
+  if (event.sport === "ufc") return ["Paramount+"];
+  if (event.sport === "formula1") return ["Disney+ Premium"];
+  if (
+    event.sport === "football" &&
+    event.competition?.externalId === "uru.1"
+  ) {
+    return ["Disney+ Premium"];
+  }
+  if (
+    event.sport === "padel" &&
+    /(?:premier padel|\b[pm][12]\b)/i.test(event.competition?.name ?? "")
+  ) {
+    return ["Disney+ Premium"];
+  }
+  return [];
 }
 
 function isFreeYouTube(name: string) {

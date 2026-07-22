@@ -108,6 +108,12 @@ event is added.
 - Uruguayan Primera Division is fetched from ESPN's dedicated `uru.1` feed in addition to the
   worldwide TheSportsDB query. If a required ESPN feed fails or changes identity, the refresh is
   marked partial and the UI warns that some schedule sources need attention while retaining cache.
+- FotMob's public Uruguay TV guide is used as a corroborating football source. When a provider
+  supplies a shifted placeholder but the regional guide supplies a confirmed kickoff, Personal OS
+  keeps one event, uses the confirmed schedule, and merges the Uruguay broadcast services.
+- Verified regional rights add Disney+ Premium to Liga AUF Uruguaya, Formula 1, and supported
+  Premier Padel events, and Paramount+ to UFC. Other events receive a badge only when a schedule
+  or TV-guide source identifies one of the configured services; unknown rights are not guessed.
 - Streaming badges are derived automatically from broadcaster names supplied by each schedule
   provider. ESPN channels map to Disney+ Premium in Uruguay. DAZN is shown only when the source
   explicitly identifies free or freemium access, and YouTube TV or paid YouTube listings are

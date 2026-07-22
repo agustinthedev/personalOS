@@ -10,6 +10,16 @@ import type {
 const PADEL_PROVIDER = "padelapi";
 const ESPN_PROVIDER = "espn";
 const F1_PROVIDER = "jolpica";
+const FOTMOB_PROVIDER = "fotmob";
+
+const FOTMOB_URUGUAY_GUIDES = [
+  "disney-plus-premium",
+  "paramount-plus",
+  "amazon-prime-video",
+  "netflix",
+  "dazn-free",
+  "youtube",
+] as const;
 
 const playerSchema = z.object({
   id: z.number(),
@@ -184,6 +194,56 @@ export class EspnNbaProvider {
   }
 }
 
+export class FotMobUruguayTvProvider {
+  async getData() {
+    const pages = await Promise.all(
+      FOTMOB_URUGUAY_GUIDES.map(async (guide) => ({
+        guide,
+        html: await requestText(`https://www.fotmob.com/es/tv-guide/uy/${guide}`),
+      })),
+    );
+    const events = new Map<string, NormalizedEvent>();
+
+    for (const { guide, html } of pages) {
+      for (const listing of extractFotMobTvEvents(html)) {
+        const externalId = listing["@id"].split("#").pop() || listing["@id"];
+        const broadcasts = listing.broadcastEvent?.publishedOn?.map((service) =>
+          guide === "dazn-free" && /^dazn$/i.test(service.name)
+            ? "DAZN Free"
+            : guide === "youtube" && /^youtube$/i.test(service.name)
+              ? "YouTube Free"
+              : service.name,
+        ) ?? [];
+        const existing = events.get(externalId);
+        if (existing) {
+          existing.broadcast = [...new Set([...(existing.broadcast ?? []), ...broadcasts])];
+          continue;
+        }
+        const startsAtUtc = parseDate(listing.startDate);
+        if (!startsAtUtc) continue;
+        events.set(externalId, {
+          provider: FOTMOB_PROVIDER,
+          externalId,
+          sport: "football",
+          participants: [
+            { name: listing.homeTeam.name, role: "home" },
+            { name: listing.awayTeam.name, role: "away" },
+          ],
+          startsAtUtc,
+          originalTimezone: "UTC",
+          timeStatus: "confirmed",
+          status: "scheduled",
+          broadcast: broadcasts,
+          sourceUrl: safeUrl(listing.url || listing["@id"]),
+          rawProviderData: listing,
+        });
+      }
+    }
+
+    return { competitions: [], events: [...events.values()] };
+  }
+}
+
 export function selectNbaScheduleSources(
   leagues: Array<{ slug: string; name: string }>,
 ) {
@@ -355,6 +415,57 @@ const espnLeagueSchema = z
 const espnLeagueDirectorySchema = z.object({
   leagues: z.array(espnLeagueSchema),
 });
+
+const fotMobTvEventSchema = z.object({
+  "@type": z.literal("SportsEvent"),
+  "@id": z.string(),
+  name: z.string(),
+  url: z.string().optional(),
+  startDate: z.string(),
+  homeTeam: z.object({ name: z.string() }).passthrough(),
+  awayTeam: z.object({ name: z.string() }).passthrough(),
+  broadcastEvent: z
+    .object({
+      publishedOn: z
+        .array(z.object({ name: z.string() }).passthrough())
+        .optional(),
+    })
+    .passthrough()
+    .optional(),
+}).passthrough();
+
+export function extractFotMobTvEvents(html: string) {
+  const events: Array<z.infer<typeof fotMobTvEventSchema>> = [];
+  const scripts = html.matchAll(
+    /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi,
+  );
+  for (const match of scripts) {
+    try {
+      collectFotMobTvEvents(JSON.parse(match[1]), events);
+    } catch {
+      // Ignore unrelated malformed structured-data blocks.
+    }
+  }
+  return events;
+}
+
+function collectFotMobTvEvents(
+  value: unknown,
+  events: Array<z.infer<typeof fotMobTvEventSchema>>,
+) {
+  const parsed = fotMobTvEventSchema.safeParse(value);
+  if (parsed.success) {
+    events.push(parsed.data);
+    return;
+  }
+  if (Array.isArray(value)) {
+    for (const item of value) collectFotMobTvEvents(item, events);
+    return;
+  }
+  if (value && typeof value === "object") {
+    for (const nested of Object.values(value)) collectFotMobTvEvents(nested, events);
+  }
+}
 
 const espnPayloadSchema = z.object({
   leagues: z.array(espnLeagueSchema).min(1),
@@ -745,6 +856,26 @@ async function requestJson(url: string, headers?: Record<string, string>) {
     });
     if (!response.ok) throw new Error(`Schedule provider returned ${response.status}.`);
     return (await response.json()) as unknown;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function requestText(url: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        Accept: "text/html",
+        "Accept-Language": "es-UY,es;q=0.9",
+        "User-Agent": "Mozilla/5.0 (compatible; PersonalOS/1.0)",
+      },
+    });
+    if (!response.ok) throw new Error(`TV guide provider returned ${response.status}.`);
+    return response.text();
   } finally {
     clearTimeout(timeout);
   }

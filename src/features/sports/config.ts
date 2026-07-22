@@ -1,7 +1,8 @@
 import type { Sport } from "./types";
 
 export const SPORTS_PROVIDER = "thesportsdb";
-export const SPORTS_PROVIDER_LABEL = "TheSportsDB, ESPN, PadelApi & Jolpica";
+export const SPORTS_PROVIDER_LABEL =
+  "TheSportsDB, ESPN, FotMob, PadelApi, Jolpica & SportSRC";
 
 export const DEFAULT_PREFERRED_PATTERNS: Record<
   Extract<Sport, "football" | "basketball">,

@@ -17,6 +17,7 @@ import type {
   SportsDataResponse,
   SportsPreferencesView,
 } from "./types";
+import { reconcileEventViews } from "./reconcile";
 
 const defaultPreferences: SportsPreferencesView = {
   preferredSports: [
@@ -68,7 +69,7 @@ export async function getSportsData(): Promise<SportsDataResponse> {
   const now = new Date();
 
   return {
-    events: dedupeEventViews(events.map(toEventView)),
+    events: reconcileEventViews(events.map(toEventView)),
     competitions: competitions.map(toCompetitionView),
     preferences: toPreferencesView(preference),
     sync: {
@@ -346,19 +347,4 @@ function parseJson<T>(value: string | null, fallback: T): T {
 
 function retentionStart(days: number) {
   return new Date(Date.now() - days * 86_400_000);
-}
-
-function dedupeEventViews(events: EventView[]) {
-  const seen = new Set<string>();
-  return events.filter((event) => {
-    const participants = event.participants
-      .map((participant) => participant.name.toLowerCase())
-      .sort()
-      .join("|");
-    const day = event.startsAtUtc?.slice(0, 10) ?? "tbc";
-    const key = `${event.sport}:${day}:${participants}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }

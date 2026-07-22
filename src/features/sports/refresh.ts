@@ -6,6 +6,7 @@ import {
   EspnUruguayProvider,
   EspnNbaProvider,
   EspnUfcProvider,
+  FotMobUruguayTvProvider,
   SportSrcBoxingProvider,
   JolpicaF1Provider,
   PadelApiProvider,
@@ -93,7 +94,7 @@ type RefreshResult = { events: number; competitions: number };
 function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
   if (scope.type === "competition") {
     if (scope.sport === "football" && scope.competitionExternalId === "uru.1") {
-      return [refreshEspnUruguay()];
+      return [refreshEspnUruguay(), refreshFotMobTvGuide()];
     }
     if (
       scope.sport === "basketball" &&
@@ -103,7 +104,9 @@ function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
       return [refreshEspnNba()];
     }
     if (scope.sport === "football" || scope.sport === "basketball") {
-      return [refreshTheSportsDb(scope)];
+      return scope.sport === "football"
+        ? [refreshTheSportsDb(scope), refreshFotMobTvGuide()]
+        : [refreshTheSportsDb(scope)];
     }
     if (scope.sport === "padel") return [refreshPadel()];
     if (scope.sport === "formula1") return [refreshFormula1()];
@@ -127,6 +130,7 @@ function refreshJobs(scope: RefreshScope): Promise<RefreshResult>[] {
     jobs.push(refreshTheSportsDb(scope));
   }
   if (requested.includes("football")) jobs.push(refreshEspnUruguay());
+  if (requested.includes("football")) jobs.push(refreshFotMobTvGuide());
   if (requested.includes("basketball")) jobs.push(refreshEspnNba());
   if (requested.includes("padel")) jobs.push(refreshPadel());
   if (requested.includes("formula1")) jobs.push(refreshFormula1());
@@ -195,6 +199,12 @@ async function refreshEspnNba(): Promise<RefreshResult> {
   await upsertCompetitions(result.competitions);
   await upsertEvents(result.events);
   return { events: result.events.length, competitions: result.competitions.length };
+}
+
+async function refreshFotMobTvGuide(): Promise<RefreshResult> {
+  const result = await new FotMobUruguayTvProvider().getData();
+  await upsertEvents(result.events);
+  return { events: result.events.length, competitions: 0 };
 }
 
 async function refreshFormula1(): Promise<RefreshResult> {

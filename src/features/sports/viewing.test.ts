@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { viewingOptionLabels, viewingOptions } from "./viewing";
+import {
+  viewingOptionLabels,
+  viewingOptionLabelsForEvent,
+  viewingOptions,
+} from "./viewing";
+import type { EventView } from "./types";
 
 test("maps the user's paid streaming services", () => {
   assert.deepEqual(
@@ -29,5 +34,36 @@ test("deduplicates aliases reported by a provider", () => {
   assert.deepEqual(
     viewingOptionLabels(["Paramount+", "Paramount Plus", "Prime Video", "Amazon Prime Video"]),
     ["Paramount+", "Prime Video"],
+  );
+});
+
+test("applies verified Uruguay rights across supported sports", () => {
+  const base = {
+    broadcast: [],
+    competition: null,
+  } as unknown as EventView;
+  assert.deepEqual(
+    viewingOptionLabelsForEvent({ ...base, sport: "formula1" }),
+    ["Disney+ Premium"],
+  );
+  assert.deepEqual(
+    viewingOptionLabelsForEvent({ ...base, sport: "ufc" }),
+    ["Paramount+"],
+  );
+  assert.deepEqual(
+    viewingOptionLabelsForEvent({
+      ...base,
+      sport: "football",
+      competition: { externalId: "uru.1" } as EventView["competition"],
+    }),
+    ["Disney+ Premium"],
+  );
+  assert.deepEqual(
+    viewingOptionLabelsForEvent({
+      ...base,
+      sport: "padel",
+      competition: { name: "Málaga P1 2026" } as EventView["competition"],
+    }),
+    ["Disney+ Premium"],
   );
 });

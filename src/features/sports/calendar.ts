@@ -1,6 +1,6 @@
 import { DEFAULT_EVENT_DURATION_MINUTES } from "./config";
 import type { EventView, Sport } from "./types";
-import { viewingOptionLabels } from "./viewing";
+import { viewingOptionLabelsForEvent } from "./viewing";
 
 export function eventTitle(event: EventView) {
   return event.participants.map((participant) => participant.name).join(" vs ") || "Sports event";
@@ -32,7 +32,7 @@ export function calendarDescription(event: EventView) {
     ["Participants", eventTitle(event)],
     ["Event status", titleCase(event.status)],
     ["Time status", timeStatusLabel(event.timeStatus)],
-    ["Available on", viewingOptionLabels(event.broadcast).join(", ")],
+    ["Available on", viewingOptionLabelsForEvent(event).join(", ")],
     ["Broadcast", event.broadcast.join(", ")],
     ["Venue", event.venue],
     ["Source", safeHttpUrl(event.sourceUrl)],

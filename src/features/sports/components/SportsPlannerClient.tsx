@@ -17,7 +17,10 @@ import type {
   Sport,
   SportsDataResponse,
 } from "../types";
-import { viewingOptionLabels, viewingOptions } from "../viewing";
+import {
+  viewingOptionLabelsForEvent,
+  viewingOptionsForEvent,
+} from "../viewing";
 
 type DateFilter = "today" | "tomorrow" | "7days" | "30days" | "all";
 type Toast = { id: number; tone: "loading" | "success" | "warning"; message: string };
@@ -639,7 +642,7 @@ function EventCard({
 }) {
   const google = googleCalendarUrl(event);
   const outlook = outlookCalendarUrl(event);
-  const watchOptions = viewingOptions(event.broadcast);
+  const watchOptions = viewingOptionsForEvent(event);
   return (
     <article className="panel-muted rounded-[26px] p-4 md:grid md:grid-cols-[auto_120px_minmax(0,1fr)_auto] md:items-center md:gap-4">
       <label className="flex h-10 w-10 items-center justify-center">
@@ -729,7 +732,7 @@ function DetailsModal({
   }, [onClose]);
 
   const source = safeHttpUrl(event.sourceUrl);
-  const watchOptions = viewingOptionLabels(event.broadcast);
+  const watchOptions = viewingOptionLabelsForEvent(event);
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-3 backdrop-blur-md">
       <div
